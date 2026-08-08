@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>集屿 - 一站式数字资源站</title>
+    <!-- 新增：浏览器标签图标 运维说明：将图标文件命名为favicon.ico放入assets/icon目录即可生效 -->
+    <link rel="icon" href="./assets/icon/logo-bq.png" type="image/x-icon">
+    <link rel="shortcut icon" href="./assets/icon/logo-bq.png" type="image/x-icon">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<!-- 全局基础右键禁用：与JS形成双重防护 -->
+<body oncontextmenu="return false;">
+    <!-- 进入提示浮窗 -->
+    <div id="tipModal" class="tip-modal">
+        <div class="tip-content">
+            <p class="tip-text">电脑预览效果最佳</p>
+            <p class="tip-countdown">浮窗将在<span id="countdownNum">5</span>秒后自动关闭</p>
+        </div>
+    </div>
+
+    <!-- 页面跳转过渡遮罩 -->
+    <div id="transitionOverlay" class="transition-overlay"></div>
+
+    <!-- 背景视频容器 -->
+    <!-- 运维说明：三路视频源自动适配设备，替换对应文件即可生效
+         - 电脑端视频：assets/video/bg-desktop.mp4  建议比例16:9（1920*1080）
+         - 平板端视频：assets/video/bg-tablet.mp4   建议比例4:3（2048*1536，适配iPad）
+         - 移动端视频：assets/video/bg-mobile.mp4   建议比例9:16（1080*1920，竖屏）
+         所有视频统一使用H.264编码MP4格式，时长10-30秒循环流畅最佳 -->
+    <div class="video-container">
+        <video 
+            class="bg-video"
+            autoplay
+            muted
+            loop
+            playsinline
+            webkit-playsinline
+            preload="auto"
+            controlsList="nodownload noremoteplayback"
+            disablePictureInPicture
+            draggable="false"
+            oncontextmenu="return false;"
+        >
+            <!-- 电脑端视频源：宽度大于1024px时自动加载 -->
+            <source src="./assets/video/bj.mp4" media="(min-width: 1025px)" type="video/mp4">
+            <!-- 平板端视频源：宽度641px-1024px时自动加载 -->
+            <source src="./assets/video/bj.mp4" media="(min-width: 641px) and (max-width: 1024px)" type="video/mp4">
+            <!-- 移动端视频源：宽度小于等于640px时自动加载 -->
+            <source src="./assets/video/bj.mp4" media="(max-width: 640px)" type="video/mp4">
+        </video>
+        <!-- 深色遮罩 提升文字对比度 -->
+        <div class="video-overlay"></div>
+    </div>
+
+    <!-- 鼠标跟随圆圈 -->
+    <div id="cursorFollower" class="cursor-follower"></div>
+
+    <!-- 主容器 左品牌区 + 右按钮网格区 -->
+    <main class="main-container">
+        <!-- 左侧面板：品牌、介绍、页脚 -->
+        <section class="left-panel">
+            <div class="brand-wrap">
+                <!-- 品牌Logo位 适配横版Logo -->
+                <div class="brand-image-placeholder">
+                    <!-- 防护属性：禁止拖拽、禁止右键保存 -->
+                    <img 
+                        src="./assets/icon/logo.png" 
+                        alt="集屿" 
+                        class="brand-logo"
+                        draggable="false"
+                        ondragstart="return false;"
+                        oncontextmenu="return false;"
+                    >
+                </div>
+                <p class="site-subtitle">一站式数字资源站</p>
+            </div>
+            
+            <div class="intro-wrap">
+                <p class="intro-text">汇聚纯净工具 · 源码资源 · 实用技巧</p>
+                <p class="intro-text">无广告 · 无门槛 · 无捆绑</p>
+                <p class="intro-text">为计算机爱好者与校园用户</p>
+                <p class="intro-text">搭建一片高效便捷的数字岛屿</p>
+                <p class="slogan">以技术为舟 · 以资源为屿</p>
+            </div>
+
+            <footer class="site-footer">
+                <p>© 2026 集屿 JiYu</p>
+                <p>绿色服务 · 纯净体验</p>
+            </footer>
+        </section>
+
+        <!-- 右侧按钮面板：电脑端为2行3列网格，移动端保持原有布局 -->
+        <section class="right-panel">
+            <div class="btn-list">
+                <a href="https://example.com/tool" class="service-btn" target="_blank">
+                    <span class="btn-icon">⚙</span>
+                    <span class="btn-text">电脑工具库</span>
+                </a>
+                <a href="https://example.com/code" class="service-btn" target="_blank">
+                    <span class="btn-icon">&lt;/&gt;</span>
+                    <span class="btn-text">源码资源站</span>
+                </a>
+                <a href="https://example.com/skill" class="service-btn" target="_blank">
+                    <span class="btn-icon">💡</span>
+                    <span class="btn-text">电脑技巧集</span>
+                </a>
+                <a href="https://example.com/campus" class="service-btn" target="_blank">
+                    <span class="btn-icon">🎓</span>
+                    <span class="btn-text">校园服务社</span>
+                </a>
+                <a href="https://example.com/drive" class="service-btn" target="_blank">
+                    <span class="btn-icon">🚗</span>
+                    <span class="btn-text">驾校服务通</span>
+                </a>
+                <a href="https://example.com/ad" class="service-btn" target="_blank">
+                    <span class="btn-icon">📢</span>
+                    <span class="btn-text">广告合作区</span>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
