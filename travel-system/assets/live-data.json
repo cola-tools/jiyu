@@ -1,0 +1,24 @@
+{
+  "updated": "2026-09-29",
+  "source": "文化和旅游部《2025年国内居民出游数据情况》(2026-01-26)、《2025年文化和旅游发展统计公报》(2026-06-02)",
+  "trips": 65.22,
+  "tripsGrowth": 16.2,
+  "spend": 6.30,
+  "spendGrowth": 9.5,
+  "inbound": 15450,
+  "inboundGrowth": 17.1,
+  "aScenic": 16994,
+  "aScenicTrips": 75.1,
+  "aScenicSpend": 5544.9,
+  "hotelAvgPrice": 360.2,
+  "museums": 7188,
+  "heritage": 60,
+  "xj": {
+    "visitors": 3.23,
+    "spend": 3700.89,
+    "growthV": 8.03,
+    "growthS": 8.4,
+    "jobs": 100
+  },
+  "note": "本文件为面板数据源。部署后用 refresh-live-data.py（或 GitHub Action / 云函数定时）更新本文件的 updated 与各项数值，前端每次加载自动读取，无需改代码。"
+}
