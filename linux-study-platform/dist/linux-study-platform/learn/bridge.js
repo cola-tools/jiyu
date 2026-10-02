@@ -886,7 +886,7 @@
     }).then(function (r) {
       var left = Number((r.data && r.data.cooldown) || 60);
       gateMsg('ok', '验证码已发送' + (r.data && r.data.devCode
-        ? '（开发环境验证码：' + r.data.devCode + '）' : '') + '，请查收短信。');
+    ? '【演示验证码：' + r.data.devCode + '】' : '') + '，无需短信直接填入。');
       tickSms(btn, old, left);
       refreshCaptcha(scene);
       form.querySelector('[name=captcha]').value = '';
