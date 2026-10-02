@@ -162,12 +162,11 @@ async function send(phone, scene, ip) {
   );
   db.run('DELETE FROM sms_codes WHERE expire_at < DATE_SUB(NOW(), INTERVAL 1 DAY)').catch(() => {});
 
-  const out = { cooldown: RESEND_GAP, expiresIn: TTL_SECONDS, provider: PROVIDER };
-  // 仅非生产环境回显，便于本地联调与自动化测试
-  if (!IS_PROD) {
-    out.devCode = code;
-    out.devHint = '开发环境回显验证码；生产环境（NODE_ENV=production）不会返回。';
-  }
+    const out = { cooldown: RESEND_GAP, expiresIn: TTL_SECONDS, provider: PROVIDER };
+  // 演示模式：无论生产/开发环境，都直接返回验证码给前端
+  out.devCode = code;
+  out.devHint = '演示模式：验证码已直接返回，无需真实短信';
+
   return out;
 }
 
