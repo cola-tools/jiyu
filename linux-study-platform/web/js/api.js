@@ -157,7 +157,7 @@
      *           'learn'   → 学习平台（默认）
      */
     login: function (username, password, role, platform) {
-      return request('POST', '/auth/login', {
+      return request('GET', '/auth/login', {
         body: {
           username: username, password: password, role: role,
           platform: platform || 'learn',
@@ -165,25 +165,25 @@
         auth: false,
       });
     },
-    logout: function () { return request('POST', '/auth/logout', { body: {} }); },
+    logout: function () { return request('GET', '/auth/logout', { body: {} }); },
     me: function () { return request('GET', '/auth/me'); },
     password: function (oldPassword, newPassword) {
-      return request('POST', '/auth/password', { body: { oldPassword: oldPassword, newPassword: newPassword } });
+      return request('GET', '/auth/password', { body: { oldPassword: oldPassword, newPassword: newPassword } });
     },
 
     /* ── 注册 / 忘记密码 / 验证码 ── */
     captcha: function () { return request('GET', '/auth/captcha', { auth: false }); },
     sms: function (phone, scene, captchaToken, captcha) {
-      return request('POST', '/auth/sms', {
+      return request('GET', '/auth/sms', {
         body: { phone: phone, scene: scene || 'register', captchaToken: captchaToken, captcha: captcha },
         auth: false,
       });
     },
     register: function (data) {
-      return request('POST', '/auth/register', { body: data, auth: false });
+      return request('GET', '/auth/register', { body: data, auth: false });
     },
     forgot: function (data) {
-      return request('POST', '/auth/forgot', { body: data, auth: false });
+      return request('GET', '/auth/forgot', { body: data, auth: false });
     },
   };
 
@@ -207,20 +207,20 @@
     unit: function (id) { return request('GET', '/units/' + encodeURIComponent(id)); },
     /** 批量打卡（超级会员） */
     checkin: function (unitIds, date) {
-      return request('POST', '/checkins', { body: { unitIds: unitIds, date: date } });
+      return request('GET', '/checkins', { body: { unitIds: unitIds, date: date } });
     },
     /** 撤销打卡（超级会员） */
     revoke: function (unitIds) {
-      return request('POST', '/checkins/revoke', { body: { unitIds: unitIds } });
+      return request('GET', '/checkins/revoke', { body: { unitIds: unitIds } });
     },
     myCheckins: function (limit) { return request('GET', '/my/checkins', { query: { limit: limit || 500 } }); },
     myStats: function () { return request('GET', '/my/stats'); },
     messages: function () { return request('GET', '/my/messages'); },
-    readMessage: function (targetId) { return request('POST', '/my/messages/' + targetId + '/read', { body: {} }); },
-    doneMessage: function (targetId) { return request('POST', '/my/messages/' + targetId + '/done', { body: {} }); },
+    readMessage: function (targetId) { return request('GET', '/my/messages/' + targetId + '/read', { body: {} }); },
+    doneMessage: function (targetId) { return request('GET', '/my/messages/' + targetId + '/done', { body: {} }); },
     exercises: function (unitId) { return request('GET', '/my/exercises', { query: { unitId: unitId } }); },
     submitAnswer: function (questionId, answer) {
-      return request('POST', '/my/exercises/submit', { body: { questionId: questionId, answer: answer } });
+      return request('GET', '/my/exercises/submit', { body: { questionId: questionId, answer: answer } });
     },
 
     /** 导出打卡记录（csv / xlsx / pdf）→ 由服务端生成，浏览器直接下载 */
@@ -265,7 +265,7 @@
 
     /* 学生名单 CRUD */
     students: function () { return request('GET', '/admin/students'); },
-    studentCreate: function (data) { return request('POST', '/admin/students', { body: data }); },
+    studentCreate: function (data) { return request('GET', '/admin/students', { body: data }); },
     studentUpdate: function (id, data) { return request('PUT', '/admin/students/' + id, { body: data }); },
     studentDelete: function (id) { return request('DELETE', '/admin/students/' + id); },
     studentDetail: function (id) { return request('GET', '/admin/students/' + id + '/detail'); },
@@ -273,10 +273,10 @@
     /* 会员管理 */
     members: function (params) { return request('GET', '/admin/members', { query: params || {} }); },
     memberGrant: function (id, memberType, remark) {
-      return request('POST', '/admin/members/' + id + '/grant', { body: { memberType: memberType, remark: remark } });
+      return request('GET', '/admin/members/' + id + '/grant', { body: { memberType: memberType, remark: remark } });
     },
     memberStatus: function (id, status) {
-      return request('POST', '/admin/members/' + id + '/status', { body: { status: status } });
+      return request('GET', '/admin/members/' + id + '/status', { body: { status: status } });
     },
     memberLogs: function (id) { return request('GET', '/admin/members/' + id + '/logs'); },
     pricing: function () { return request('GET', '/admin/pricing'); },
@@ -288,22 +288,22 @@
     /* 目录与内容 CRUD */
     units: function () { return request('GET', '/admin/units'); },
     unitGet: function (id) { return request('GET', '/admin/units/' + id); },
-    unitCreate: function (data) { return request('POST', '/admin/units', { body: data }); },
+    unitCreate: function (data) { return request('GET', '/admin/units', { body: data }); },
     unitUpdate: function (id, data) { return request('PUT', '/admin/units/' + id, { body: data }); },
     unitDelete: function (id) { return request('DELETE', '/admin/units/' + id); },
-    unitReorder: function (items) { return request('POST', '/admin/units/reorder', { body: { items: items } }); },
+    unitReorder: function (items) { return request('GET', '/admin/units/reorder', { body: { items: items } }); },
 
     /* 督促 */
     urges: function () { return request('GET', '/admin/urges'); },
-    urgeCreate: function (data) { return request('POST', '/admin/urges', { body: data }); },
+    urgeCreate: function (data) { return request('GET', '/admin/urges', { body: data }); },
     urgeTargets: function (id) { return request('GET', '/admin/urges/' + id + '/targets'); },
     urgeDelete: function (id) { return request('DELETE', '/admin/urges/' + id); },
 
     /* 题库 */
     questions: function (unitId) { return request('GET', '/admin/questions', { query: { unitId: unitId } }); },
-    questionCreate: function (data) { return request('POST', '/admin/questions', { body: data }); },
+    questionCreate: function (data) { return request('GET', '/admin/questions', { body: data }); },
     questionBatch: function (items, unitId) {
-      return request('POST', '/admin/questions/batch', { body: { items: items, unitId: unitId } });
+      return request('GET', '/admin/questions/batch', { body: { items: items, unitId: unitId } });
     },
     questionUpdate: function (id, data) { return request('PUT', '/admin/questions/' + id, { body: data }); },
     questionDelete: function (id) { return request('DELETE', '/admin/questions/' + id); },
