@@ -13,6 +13,8 @@ const cfg = {
   waitForConnections: true,
   connectionLimit: Number(process.env.DB_POOL || 10),
   queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
   charset: 'utf8mb4_unicode_ci',
   timezone: '+08:00',
   dateStrings: ['DATE', 'DATETIME'],

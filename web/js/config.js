@@ -69,7 +69,7 @@
     if (saved && isValidHttp(saved)) return trimSlash(saved);
 
     // D. 同源
-    return "https://jiyu-production-3034.up.railway.app";
+    return '';
   }
 
   var API_BASE = resolveApiBase();

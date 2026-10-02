@@ -450,8 +450,9 @@
         else if (act === 'pricing') { if (MG) MG.openPricing(); }
         else if (act === 'member') { if (MG) MG.openMine(); }
         else if (act === 'learn') {
-          /* 学习平台与打卡平台共用同一套账号与会员体系 */
-          w.open('/learn/', '_blank');
+          /* 学习平台与打卡平台共用同一套账号与会员体系
+             相对路径：无论部署在根路径还是 /linux-study-platform/ 子目录下都能正确跳转 */
+          w.open('../learn/', '_blank');
         }
         else if (act === 'theme') {
           var t = STORE.toggleTheme();

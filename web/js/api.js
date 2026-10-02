@@ -75,45 +75,64 @@
     };
     if (o.body !== undefined) init.body = JSON.stringify(o.body);
 
-    // 超时
-    var ctrl = null, timer = null;
     var timeout = o.timeout || DEFAULT_TIMEOUT;
-    if (w.AbortController && timeout > 0) {
-      ctrl = new w.AbortController();
-      init.signal = ctrl.signal;
-      timer = setTimeout(function () { ctrl.abort(); }, timeout);
+
+    function attempt() {
+      // 每次尝试使用独立的超时控制器（重试时上一次的 signal 已 abort，不能复用）
+      var ctrl = null, timer = null, thisInit = init;
+      if (w.AbortController && timeout > 0) {
+        ctrl = new w.AbortController();
+        thisInit = assign({}, init, { signal: ctrl.signal });
+        timer = setTimeout(function () { ctrl.abort(); }, timeout);
+      }
+
+      return fetch(url, thisInit).then(function (res) {
+        if (timer) clearTimeout(timer);
+        var ct = res.headers.get('content-type') || '';
+        var parse = ct.indexOf('application/json') >= 0
+          ? res.json().catch(function () { return null; })
+          : res.text().then(function (t) {
+              try { return JSON.parse(t); } catch (e) { return { message: String(t).slice(0, 300) }; }
+            });
+
+        return parse.then(function (data) {
+          if (res.ok) return data;
+
+          // 401：令牌失效 → 清会话
+          if (res.status === 401 && o.auth !== false) {
+            setToken('');
+            try { w.dispatchEvent(new CustomEvent('lsp:unauthorized')); } catch (e) { /* 忽略 */ }
+          }
+
+          var msg = (data && (data.message || data.error)) || defaultMsg(res.status);
+          throw ApiError(res.status, (data && data.error) || 'HTTP_' + res.status, msg, data);
+        });
+      }).catch(function (err) {
+        if (timer) clearTimeout(timer);
+        if (err && err.name === 'ApiError') throw err;
+        if (err && (err.name === 'AbortError' || err.code === 20)) {
+          throw ApiError(0, 'TIMEOUT', '请求超时，请检查网络或后端服务');
+        }
+        throw ApiError(0, 'NETWORK_ERROR',
+          '网络连接不稳定，无法访问后端服务（' + (CFG.API_BASE || w.location.origin) + '）。请稍后重试；若持续失败请联系管理员检查服务状态。', err);
+      });
     }
 
-    return fetch(url, init).then(function (res) {
-      if (timer) clearTimeout(timer);
-      var ct = res.headers.get('content-type') || '';
-      var parse = ct.indexOf('application/json') >= 0
-        ? res.json().catch(function () { return null; })
-        : res.text().then(function (t) {
-            try { return JSON.parse(t); } catch (e) { return { message: String(t).slice(0, 300) }; }
-          });
-
-      return parse.then(function (data) {
-        if (res.ok) return data;
-
-        // 401：令牌失效 → 清会话
-        if (res.status === 401 && o.auth !== false) {
-          setToken('');
-          try { w.dispatchEvent(new CustomEvent('lsp:unauthorized')); } catch (e) { /* 忽略 */ }
+    /* 网络层自动重试：GET 与图形验证码（幂等）最多重试 2 次，
+       应对 Railway / GitHub Pages 偶发的网络抖动，
+       尽量避免「图形验证码获取失败 / 列表加载失败」这类一次抖动就报错的情况 */
+    var retries = (method === 'GET' || path === '/auth/captcha') ? 2 : 0;
+    function run(n) {
+      return attempt().catch(function (err) {
+        var retriable = err && (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT');
+        if (n < retries && retriable) {
+          return new Promise(function (res) { setTimeout(res, n === 0 ? 500 : 1200); })
+            .then(function () { return run(n + 1); });
         }
-
-        var msg = (data && (data.message || data.error)) || defaultMsg(res.status);
-        throw ApiError(res.status, (data && data.error) || 'HTTP_' + res.status, msg, data);
+        throw err;
       });
-    }).catch(function (err) {
-      if (timer) clearTimeout(timer);
-      if (err && err.name === 'ApiError') throw err;
-      if (err && (err.name === 'AbortError' || err.code === 20)) {
-        throw ApiError(0, 'TIMEOUT', '请求超时，请检查网络或后端服务');
-      }
-      throw ApiError(0, 'NETWORK_ERROR',
-        '无法连接后端服务（' + (CFG.API_BASE || w.location.origin) + '）。请确认服务已启动，且 CORS 已放行当前域名。', err);
-    });
+    }
+    return run(0);
   }
 
   function defaultMsg(status) {
@@ -157,7 +176,7 @@
      *           'learn'   → 学习平台（默认）
      */
     login: function (username, password, role, platform) {
-      return request('GET', '/auth/login', {
+      return request('POST', '/auth/login', {
         body: {
           username: username, password: password, role: role,
           platform: platform || 'learn',
@@ -165,25 +184,25 @@
         auth: false,
       });
     },
-    logout: function () { return request('GET', '/auth/logout', { body: {} }); },
+    logout: function () { return request('POST', '/auth/logout', { body: {} }); },
     me: function () { return request('GET', '/auth/me'); },
     password: function (oldPassword, newPassword) {
-      return request('GET', '/auth/password', { body: { oldPassword: oldPassword, newPassword: newPassword } });
+      return request('POST', '/auth/password', { body: { oldPassword: oldPassword, newPassword: newPassword } });
     },
 
     /* ── 注册 / 忘记密码 / 验证码 ── */
-    captcha: function () { return request('GET', '/auth/captcha', { auth: false }); },
+    captcha: function () { return request('POST', '/auth/captcha', { body: {}, auth: false }); },
     sms: function (phone, scene, captchaToken, captcha) {
-      return request('GET', '/auth/sms', {
+      return request('POST', '/auth/sms', {
         body: { phone: phone, scene: scene || 'register', captchaToken: captchaToken, captcha: captcha },
         auth: false,
       });
     },
     register: function (data) {
-      return request('GET', '/auth/register', { body: data, auth: false });
+      return request('POST', '/auth/register', { body: data, auth: false });
     },
     forgot: function (data) {
-      return request('GET', '/auth/forgot', { body: data, auth: false });
+      return request('POST', '/auth/forgot', { body: data, auth: false });
     },
   };
 
@@ -207,20 +226,20 @@
     unit: function (id) { return request('GET', '/units/' + encodeURIComponent(id)); },
     /** 批量打卡（超级会员） */
     checkin: function (unitIds, date) {
-      return request('GET', '/checkins', { body: { unitIds: unitIds, date: date } });
+      return request('POST', '/checkins', { body: { unitIds: unitIds, date: date } });
     },
     /** 撤销打卡（超级会员） */
     revoke: function (unitIds) {
-      return request('GET', '/checkins/revoke', { body: { unitIds: unitIds } });
+      return request('POST', '/checkins/revoke', { body: { unitIds: unitIds } });
     },
     myCheckins: function (limit) { return request('GET', '/my/checkins', { query: { limit: limit || 500 } }); },
     myStats: function () { return request('GET', '/my/stats'); },
     messages: function () { return request('GET', '/my/messages'); },
-    readMessage: function (targetId) { return request('GET', '/my/messages/' + targetId + '/read', { body: {} }); },
-    doneMessage: function (targetId) { return request('GET', '/my/messages/' + targetId + '/done', { body: {} }); },
+    readMessage: function (targetId) { return request('POST', '/my/messages/' + targetId + '/read', { body: {} }); },
+    doneMessage: function (targetId) { return request('POST', '/my/messages/' + targetId + '/done', { body: {} }); },
     exercises: function (unitId) { return request('GET', '/my/exercises', { query: { unitId: unitId } }); },
     submitAnswer: function (questionId, answer) {
-      return request('GET', '/my/exercises/submit', { body: { questionId: questionId, answer: answer } });
+      return request('POST', '/my/exercises/submit', { body: { questionId: questionId, answer: answer } });
     },
 
     /** 导出打卡记录（csv / xlsx / pdf）→ 由服务端生成，浏览器直接下载 */
@@ -265,7 +284,7 @@
 
     /* 学生名单 CRUD */
     students: function () { return request('GET', '/admin/students'); },
-    studentCreate: function (data) { return request('GET', '/admin/students', { body: data }); },
+    studentCreate: function (data) { return request('POST', '/admin/students', { body: data }); },
     studentUpdate: function (id, data) { return request('PUT', '/admin/students/' + id, { body: data }); },
     studentDelete: function (id) { return request('DELETE', '/admin/students/' + id); },
     studentDetail: function (id) { return request('GET', '/admin/students/' + id + '/detail'); },
@@ -273,10 +292,10 @@
     /* 会员管理 */
     members: function (params) { return request('GET', '/admin/members', { query: params || {} }); },
     memberGrant: function (id, memberType, remark) {
-      return request('GET', '/admin/members/' + id + '/grant', { body: { memberType: memberType, remark: remark } });
+      return request('POST', '/admin/members/' + id + '/grant', { body: { memberType: memberType, remark: remark } });
     },
     memberStatus: function (id, status) {
-      return request('GET', '/admin/members/' + id + '/status', { body: { status: status } });
+      return request('POST', '/admin/members/' + id + '/status', { body: { status: status } });
     },
     memberLogs: function (id) { return request('GET', '/admin/members/' + id + '/logs'); },
     pricing: function () { return request('GET', '/admin/pricing'); },
@@ -288,22 +307,22 @@
     /* 目录与内容 CRUD */
     units: function () { return request('GET', '/admin/units'); },
     unitGet: function (id) { return request('GET', '/admin/units/' + id); },
-    unitCreate: function (data) { return request('GET', '/admin/units', { body: data }); },
+    unitCreate: function (data) { return request('POST', '/admin/units', { body: data }); },
     unitUpdate: function (id, data) { return request('PUT', '/admin/units/' + id, { body: data }); },
     unitDelete: function (id) { return request('DELETE', '/admin/units/' + id); },
-    unitReorder: function (items) { return request('GET', '/admin/units/reorder', { body: { items: items } }); },
+    unitReorder: function (items) { return request('POST', '/admin/units/reorder', { body: { items: items } }); },
 
     /* 督促 */
     urges: function () { return request('GET', '/admin/urges'); },
-    urgeCreate: function (data) { return request('GET', '/admin/urges', { body: data }); },
+    urgeCreate: function (data) { return request('POST', '/admin/urges', { body: data }); },
     urgeTargets: function (id) { return request('GET', '/admin/urges/' + id + '/targets'); },
     urgeDelete: function (id) { return request('DELETE', '/admin/urges/' + id); },
 
     /* 题库 */
     questions: function (unitId) { return request('GET', '/admin/questions', { query: { unitId: unitId } }); },
-    questionCreate: function (data) { return request('GET', '/admin/questions', { body: data }); },
+    questionCreate: function (data) { return request('POST', '/admin/questions', { body: data }); },
     questionBatch: function (items, unitId) {
-      return request('GET', '/admin/questions/batch', { body: { items: items, unitId: unitId } });
+      return request('POST', '/admin/questions/batch', { body: { items: items, unitId: unitId } });
     },
     questionUpdate: function (id, data) { return request('PUT', '/admin/questions/' + id, { body: data }); },
     questionDelete: function (id) { return request('DELETE', '/admin/questions/' + id); },

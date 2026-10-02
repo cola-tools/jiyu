@@ -94,7 +94,24 @@
   }
 
   /* ══════════════ 3. API ══════════════ */
+  /* 网络层自动重试：GET 与图形验证码（幂等）最多重试 2 次，
+     应对 Railway / GitHub Pages 偶发的网络抖动，避免一次抖动就「获取失败」 */
   function req(method, path, body, opt) {
+    var o = opt || {};
+    var retries = (method === 'GET' || path === '/auth/captcha') ? 2 : 0;
+    function run(n) {
+      return reqOnce(method, path, body, o).catch(function (err) {
+        var networkLevel = !err || !err.status;   // fetch 直接失败（断网 / DNS / CORS 断连）没有 status
+        if (n < retries && networkLevel) {
+          return new Promise(function (res) { setTimeout(res, n === 0 ? 500 : 1200); })
+            .then(function () { return run(n + 1); });
+        }
+        throw err;
+      });
+    }
+    return run(0);
+  }
+  function reqOnce(method, path, body, opt) {
     var o = opt || {};
     var headers = {};
     if (body !== undefined && body !== null) headers['Content-Type'] = 'application/json';
@@ -167,6 +184,7 @@
           '<div class="wb-sep"></div>' +
           '<div class="wb-mh">学习与记录</div>' +
           '<button class="wb-mi" type="button" data-wb="records"><span class="i">📥</span><span>打卡记录与导出</span></button>' +
+          '<button class="wb-mi" type="button" data-wb="checkin"><span class="i">📝</span><span>前往打卡平台</span></button>' +
           '<button class="wb-mi" type="button" id="wbMiTheme" data-wb="theme"><span class="i">☀️</span><span>切换为浅色主题</span></button>' +
           '<div class="wb-sep"></div>' +
           '<button class="wb-mi danger" type="button" data-wb="logout"><span class="i">🚪</span><span>退出登录</span></button>' +
@@ -1150,6 +1168,7 @@
         if (a === 'pricing') { openPricing(); return; }
         if (a === 'mine') { openMine(); return; }
         if (a === 'records') { var f = L(); if (f && f.go) f.go('#/records'); return; }
+        if (a === 'checkin') { window.open('../web/', '_blank'); return; }
         if (a === 'theme') { toggleTheme(); return; }
         if (a === 'logout') { doLogout(); return; }
         if (a === 'close') { closeOv(); return; }
