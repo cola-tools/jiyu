@@ -1,0 +1,422 @@
+/* ========== 全局重置 ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* 维语专用字体优先 */
+    font-family: "UKIJ Tuz Tom", "ALKATIP Tor", "Microsoft YaHei", sans-serif;
+    color: #f0f4f8;
+    background-color: #0a0e17;
+    /* 维语右对齐书写方向 */
+    direction: rtl;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* ========== 右上角语言切换按钮（新增） ========== */
+.language-switch {
+    position: fixed;
+    top: 32px;
+    right: 6%;
+    z-index: 999;
+}
+
+.lang-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    color: #cbd5e1;
+    font-size: 14px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.lang-btn:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(56, 189, 248, 0.45);
+    color: #f8fafc;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* ========== 背景视频 ========== */
+.video-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.bg-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* 渐变方向适配维语右对齐：右侧深，左侧稍浅 */
+    background: linear-gradient(-90deg, rgba(10,14,23,0.92) 0%, rgba(10,14,23,0.45) 48%, rgba(10,14,23,0.78) 100%);
+}
+
+/* ========== 鼠标跟随圆圈 ========== */
+.cursor-follower {
+    position: fixed;
+    width: 42px;
+    height: 42px;
+    border: 2px solid rgba(148, 163, 184, 0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(50%, -50%);
+    transition: width 0.2s ease, height 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.cursor-follower.active {
+    width: 28px;
+    height: 28px;
+    background-color: rgba(56, 189, 248, 0.45);
+    border-color: rgba(56, 189, 248, 0.9);
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .cursor-follower {
+        display: none;
+    }
+}
+
+/* ========== 进入提示浮窗 ========== */
+.tip-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.tip-modal.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.tip-content {
+    padding: 32px 48px;
+    background-color: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.tip-text {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    color: #e2e8f0;
+}
+
+.tip-countdown {
+    font-size: 14px;
+    color: #94a3b8;
+}
+
+.tip-countdown span {
+    color: #38bdf8;
+    font-weight: 600;
+}
+
+/* ========== 跳转过渡遮罩 ========== */
+.transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #0a0e17;
+    z-index: 9998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.transition-overlay.show {
+    opacity: 1;
+}
+
+/* ========== 主容器布局（电脑端） ========== */
+.main-container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6%;
+    transform-style: preserve-3d;
+}
+
+/* 右侧品牌面板：占25%宽度（维语阅读起点） */
+.right-panel-brand {
+    width: 25%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 60px 0;
+    transform-style: preserve-3d;
+    text-align: right;
+}
+
+.brand-wrap {
+    perspective: 1000px;
+}
+
+.brand-image-placeholder {
+    width: 360px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    transform: translateZ(24px);
+}
+
+.brand-logo {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.site-subtitle {
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: #cbd5e1;
+    transform: translateZ(12px);
+}
+
+.intro-wrap {
+    margin: 36px 0;
+    perspective: 1000px;
+}
+
+.intro-text {
+    font-size: 15px;
+    line-height: 2;
+    color: #cbd5e1;
+    margin-bottom: 4px;
+    transform: translateZ(16px);
+}
+
+.slogan {
+    margin-top: 24px;
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: #38bdf8;
+    transform: translateZ(10px);
+}
+
+.site-footer {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.8;
+}
+
+/* 左侧按钮面板：2行3列网格 */
+.left-panel-btns {
+    width: 65%;
+    flex: none;
+    display: flex;
+    justify-content: flex-start;
+    perspective: 1200px;
+}
+
+.btn-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    width: 100%;
+    max-width: 780px;
+}
+
+.service-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 22px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateZ(0);
+    transform-style: preserve-3d;
+    cursor: pointer;
+    justify-content: flex-end;
+}
+
+.service-btn:hover {
+    transform: translateZ(18px) translateY(-3px);
+    background-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(56, 189, 248, 0.45);
+    box-shadow: 
+        0 12px 32px rgba(0, 0, 0, 0.4),
+        0 0 20px rgba(56, 189, 248, 0.15);
+}
+
+.btn-icon {
+    font-size: 20px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(56, 189, 248, 0.1);
+    border-radius: 8px;
+    transform: translateZ(12px);
+}
+
+.btn-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: #e2e8f0;
+    transform: translateZ(8px);
+}
+
+/* ========== 响应式适配 ========== */
+/* 平板端：宽度≤1024px，上下布局 */
+@media screen and (max-width: 1024px) {
+    html, body {
+        overflow-y: auto;
+    }
+    
+    .main-container {
+        flex-direction: column;
+        padding: 40px 5%;
+        justify-content: flex-start;
+        gap: 32px;
+    }
+
+    .right-panel-brand {
+        width: 100%;
+        height: auto;
+        padding: 0;
+        text-align: center;
+    }
+
+    .brand-image-placeholder {
+        width: 280px;
+        margin: 0 auto 16px;
+        justify-content: center;
+    }
+
+    .site-footer {
+        display: none;
+    }
+
+    .left-panel-btns {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-list {
+        max-width: 420px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    /* 平板端语言按钮位置调整 */
+    .language-switch {
+        top: 24px;
+        right: 5%;
+    }
+
+    .lang-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+}
+
+/* 移动端：宽度≤640px，按钮1列 */
+@media screen and (max-width: 640px) {
+    .brand-image-placeholder {
+        width: 220px;
+    }
+
+    .site-subtitle {
+        font-size: 18px;
+        letter-spacing: 1px;
+    }
+
+    .tip-content {
+        padding: 24px 32px;
+        margin: 0 20px;
+    }
+
+    .btn-list {
+        grid-template-columns: 1fr;
+    }
+
+    /* 移动端语言按钮缩小 */
+    .language-switch {
+        top: 16px;
+        right: 5%;
+    }
+
+    .lang-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+}
+
+/* ========== 安全防护样式 ========== */
+body {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+img, video {
+    -webkit-user-drag: none;
+    user-drag: none;
+}
+
+::selection {
+    background: transparent;
+    color: inherit;
+}
+
+::-moz-selection {
+    background: transparent;
+    color: inherit;
+}

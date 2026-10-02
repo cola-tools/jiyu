@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ug" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جىيۈ - بىر ئورۇندىق سانلىق مەلۇمات مەنبەسى</title>
+    <!-- 浏览器标签图标 -->
+    <link rel="icon" href="../assets/icon/logo-bq.png" type="image/x-icon">
+    <link rel="shortcut icon" href="../assets/icon/logo-bq.png" type="image/x-icon">
+    <link rel="stylesheet" href="../css/style-ug.css">
+</head>
+<!-- 全局右键禁用 -->
+<body oncontextmenu="return false;">
+    <!-- 进入提示浮窗 -->
+    <div id="tipModal" class="tip-modal">
+        <div class="tip-content">
+            <p class="tip-text">كومپيۇتەردا كۆرۈش ئەڭ ياخشى</p>
+            <p class="tip-countdown">كۆزنەك <span id="countdownNum">5</span> سېكونتتىن كېيىن ئۆزىلا يېپىلىدۇ</p>
+        </div>
+    </div>
+
+    <!-- 页面跳转过渡遮罩 -->
+    <div id="transitionOverlay" class="transition-overlay"></div>
+
+    <!-- 右上角语言切换按钮 -->
+    <!-- ئىشلىتىش چۈشەندۈرۈشى：بېسىلغاندا خەنزۇچە بەتكە ئۆتىدۇ -->
+    <div class="language-switch">
+        <a href="../index.html" class="lang-btn">中文 | 汉语</a>
+    </div>
+
+    <!-- 背景视频容器 -->
+    <!-- 
+        ئىشلىتىش چۈشەندۈرۈشى:
+        - كومپيۇتەر بېتى: assets/video/bg-desktop.mp4  16:9 نىسبىتى
+        - پىلانشېت بېتى: assets/video/bg-tablet.mp4   4:3 نىسبىتى
+        - تېلېفون بېتى: assets/video/bg-mobile.mp4   9:16 نىسبىتى
+        بارلىق سىن ئۈچۈن H.264 كودلاش MP4 فورمىتى ئىشلىتىڭ
+    -->
+    <div class="video-container">
+        <video 
+            class="bg-video"
+            autoplay
+            muted
+            loop
+            playsinline
+            webkit-playsinline
+            preload="auto"
+            controlsList="nodownload noremoteplayback"
+            disablePictureInPicture
+            draggable="false"
+            oncontextmenu="return false;"
+        >
+            <source src="../assets/video/bj.mp4" media="(min-width: 1025px)" type="video/mp4">
+            <source src="../assets/video/bj.mp4" media="(min-width: 641px) and (max-width: 1024px)" type="video/mp4">
+            <source src="../assets/video/mobile.mp4" media="(max-width: 640px)" type="video/mp4">
+        </video>
+        <div class="video-overlay"></div>
+    </div>
+
+    <!-- 鼠标跟随圆圈 -->
+    <div id="cursorFollower" class="cursor-follower"></div>
+
+    <!-- 主容器：维语右对齐布局，品牌区在右，按钮区在左 -->
+    <main class="main-container">
+        <!-- 右侧面板：品牌、介绍、页脚（维语阅读起点在右侧） -->
+        <section class="right-panel-brand">
+            <div class="brand-wrap">
+                <div class="brand-image-placeholder">
+                    <img 
+                        src="../assets/icon/logo.png" 
+                        alt="جىيۈ" 
+                        class="brand-logo"
+                        draggable="false"
+                        ondragstart="return false;"
+                        oncontextmenu="return false;"
+                    >
+                </div>
+                <p class="site-subtitle">بىر ئورۇندىق سانلىق مەلۇمات مەنبەسى</p>
+            </div>
+            
+            <div class="intro-wrap">
+                <p class="intro-text">ساپ قوراللار · مەنبە كودى · ئەمەلىي ئۇسۇللار</p>
+                <p class="intro-text">ئېلان يوق · چەكلىمە يوق · ئىلگىرىكى ئەڭگىمە يوق</p>
+                <p class="intro-text">كومپيۇتەر مۇھەببىتكارلىرى ۋە</p>
+                <p class="intro-text">مەكتەپ ئىشلىتىشچىلىرى ئۈچۈن</p>
+                <p class="slogan">تېخنىكا بىلەن كېمە قىلىپ · مەنبە بىلەن ئارىلىق قىلىپ</p>
+            </div>
+
+            <footer class="site-footer">
+                <p>© 2026 جىيۈ JiYu</p>
+                <p>يېشىل مۇلازىمەت · ساپ تەجرىبە</p>
+            </footer>
+        </section>
+
+        <!-- 左侧按钮面板：2行3列网格 -->
+        <section class="left-panel-btns">
+            <div class="btn-list">
+                <a href="./webber/tools/index.html" class="service-btn" target="_blank">
+                    <span class="btn-text">كومپيۇتەر قوراللىرى</span>
+                    <span class="btn-icon">⚙</span>
+                </a>
+                <a href="https://example.com/code" class="service-btn" target="_blank">
+                    <span class="btn-text">مەنبە كودى مەنبەسى</span>
+                    <span class="btn-icon">&lt;/&gt;</span>
+                </a>
+                <a href="https://example.com/skill" class="service-btn" target="_blank">
+                    <span class="btn-text">كومپيۇتەر ئۇسۇللىرى</span>
+                    <span class="btn-icon">💡</span>
+                </a>
+                <a href="https://example.com/campus" class="service-btn" target="_blank">
+                    <span class="btn-text">مەكتەپ مۇلازىمەتى</span>
+                    <span class="btn-icon">🎓</span>
+                </a>
+                <a href="./webber/tag darya-hz/index.html" class="service-btn" target="_blank">
+                    <span class="btn-text">ھەيدەش سىناق مۇلازىمىتى</span>
+                    <span class="btn-icon">🚗</span>
+                </a>
+                <a href="https://example.com/ad" class="service-btn" target="_blank">
+                    <span class="btn-text">ئېلان ھەمكارلىق رايونى</span>
+                    <span class="btn-icon">📢</span>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <script src="../js/main-ug.js"></script>
+</body>
+</html>
