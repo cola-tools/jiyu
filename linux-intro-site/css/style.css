@@ -1,0 +1,285 @@
+/*全局重置*/
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    min-height: 100vh;
+    font-family: "Comic Sans MS", "ZCOOL KuaiLe", sans-serif;
+    transition: all 0.4s ease;
+    /*循环渐变背景*/
+    background: linear-gradient(-45deg, #050a20, #0b1b42, #102859, #071436);
+    background-size: 400% 400%;
+    animation: gradientBg 18s ease infinite;
+    overflow-x: hidden;
+}
+/*浅色主题*/
+body.theme-light {
+    background: linear-gradient(-45deg, #fff8dc, #fff3c9, #fffbe0, #fff5d0);
+    background-size: 400% 400%;
+    animation: gradientBg 18s ease infinite;
+}
+@keyframes gradientBg {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/*背景萌物装饰*/
+.decor {
+    position: fixed;
+    opacity: 0.12;
+    z-index: 0;
+    pointer-events: none;
+    animation: float 7s ease-in-out infinite;
+}
+.kitty {
+    width: 140px;
+    height: 140px;
+    bottom: 12%;
+    left: 5%;
+    background-image: url("https://cdn.jsdelivr.net/gh/akxy/oss/kitty.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+.nailong {
+    width: 160px;
+    height: 160px;
+    top: 18%;
+    right: 6%;
+    background-image: url("https://cdn.jsdelivr.net/gh/akxy/oss/nailong.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    animation-delay: 2.5s;
+}
+@keyframes float {
+    0% { transform: translateY(0px) rotate(-3deg); }
+    50% { transform: translateY(-18px) rotate(3deg); }
+    100% { transform: translateY(0px) rotate(-3deg); }
+}
+
+/*头部*/
+.page-header {
+    position: relative;
+    z-index: 1;
+    padding: 40px 20px;
+    text-align: center;
+}
+.main-title {
+    font-size: clamp(1.8rem,4vw,2.8rem);
+    margin-bottom:12px;
+}
+.theme-dark .main-title { color:#ffffff; opacity:0.96; }
+.theme-light .main-title { color:#222222; opacity:0.96; }
+
+.sub-title {
+    font-size: clamp(1rem,2vw,1.3rem);
+    margin-bottom:24px;
+}
+.theme-dark .sub-title { color:#e0e8ff; opacity:0.82; }
+.theme-light .sub-title { color:#333333; opacity:0.82; }
+
+.theme-btn {
+    padding: 10px 22px;
+    border-radius: 14px;
+    border: 2px dashed #88aaff;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-size:1rem;
+    cursor:pointer;
+    transition: 0.25s all;
+    font-family: inherit;
+}
+.theme-light .theme-btn {
+    color:#222;
+    border-color:#ccaa44;
+    background:rgba(0,0,0,0.06);
+}
+.theme-btn:active {
+    transform: scale(0.94);
+}
+.theme-btn:hover {
+    transform: translateY(-3px);
+}
+
+/*主容器*/
+.container {
+    position: relative;
+    z-index:1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+    display: flex;
+    flex-direction: column;
+    gap:36px;
+}
+
+/*手绘卡片框架*/
+.card-frame {
+    border: 3px dashed;
+    border-radius: 22px;
+    padding: 24px;
+    transition: 0.3s;
+}
+.theme-dark .card-frame {
+    border-color:#5078dd;
+    background:rgba(12,22,55,0.55);
+}
+.theme-light .card-frame {
+    border-color:#d4b266;
+    background:rgba(255,250,220,0.75);
+}
+.card-frame:active {
+    transform: scale(0.985);
+}
+.card-frame:hover {
+    transform: translateY(-6px);
+}
+
+.card-img-wrap {
+    width:100%;
+    margin-bottom:20px;
+}
+.preview-img {
+    width:100%;
+    border-radius:14px;
+    border:2px dashed #88aaff;
+    cursor: zoom-in;
+    transition:0.25s;
+}
+.preview-img:hover {
+    filter: brightness(1.08);
+}
+
+/*多级文字样式，不同透明度颜色 */
+.h1-text {
+    font-size:1.6rem;
+    margin-bottom:10px;
+}
+.theme-dark .h1-text { color:#99ccff; opacity:0.98; }
+.theme-light .h1-text { color:#2b4e99; opacity:0.98; }
+
+.h2-text {
+    font-size:1.3rem;
+    margin-bottom:8px;
+}
+.theme-dark .h2-text { color:#b8d8ff; opacity:0.88; }
+.theme-light .h2-text { color:#4466aa; opacity:0.88; }
+
+.h3-text {
+    font-size:1.1rem;
+    margin-bottom:14px;
+}
+.theme-dark .h3-text { color:#cfe3ff; opacity:0.78; }
+.theme-light .h3-text { color:#5577bb; opacity:0.78; }
+
+.body-text {
+    font-size:1rem;
+    line-height:1.7;
+    margin-bottom:12px;
+}
+.theme-dark .body-text { color:#f0f6ff; opacity:0.86; }
+.theme-light .body-text { color:#222222; opacity:0.86; }
+
+.note-text {
+    font-size:0.95rem;
+    line-height:1.6;
+    margin-bottom:10px;
+    font-style:italic;
+}
+.theme-dark .note-text { color:#ffddaa; opacity:0.8; }
+.theme-light .note-text { color:#995522; opacity:0.8; }
+
+.quote-text {
+    font-size:0.92rem;
+    line-height:1.6;
+    padding-left:12px;
+    border-left:3px solid;
+}
+.theme-dark .quote-text {
+    color:#b9ffb9;
+    border-color:#80dd80;
+    opacity:0.74;
+}
+.theme-light .quote-text {
+    color:#227722;
+    border-color:#55bb55;
+    opacity:0.74;
+}
+
+/*二维码行布局*/
+.qrcode-row {
+    display:flex;
+    gap:16px;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin:24px 0;
+}
+.qr-item {
+    text-align:center;
+}
+.qr-item img {
+    width:120px;
+    height:120px;
+    border-radius:10px;
+    border:2px dashed #88aaff;
+    margin-bottom:8px;
+}
+.theme-light .qr-item img {
+    border-color:#ccaa44;
+}
+.qr-item span {
+    display:block;
+}
+.theme-dark .qr-item span {color:#fff;}
+.theme-light .qr-item span {color:#222;}
+
+.contact-info {
+    text-align:center;
+    margin-top:16px;
+}
+
+/*图片放大弹窗*/
+.modal {
+    position: fixed;
+    inset:0;
+    background:rgba(0,0,0,0.82);
+    z-index: 999;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+.modal.active {
+    display:flex;
+}
+.modal-inner {
+    position:relative;
+    max-width:90%;
+    max-height:90vh;
+}
+.close-btn {
+    position:absolute;
+    top:-14px;
+    right:-14px;
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    border:3px dashed #ff88aa;
+    background:#222;
+    color:#fff;
+    font-size:24px;
+    cursor:pointer;
+    font-family: inherit;
+    transition:0.2s;
+}
+.close-btn:active {
+    transform:scale(0.85);
+}
+#modalImg {
+    max-width:100%;
+    max-height:85vh;
+    border-radius:16px;
+    border:3px dashed #88aaff;
+}
