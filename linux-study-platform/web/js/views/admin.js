@@ -23,6 +23,10 @@
     logAction: '',
     qUnitId: '',
     urgeFilter: '',
+    /* 会员管理筛选 */
+    memberQuery: '',
+    memberType: '',
+    memberStatus: '',
   };
 
   var LV_ICO = { 1: '📚', 2: '📂', 3: '📄', 4: '📝' };
@@ -1802,6 +1806,564 @@
     });
   }
 
+  /* ═══════════════════ 会员：公共辅助 ═══════════════════ */
+
+  var MTYPE_META = {
+    none:    { label: '普通会员', ico: '🙍', cls: 'mt-none' },
+    week:    { label: '周会员',   ico: '🌱', cls: 'mt-week' },
+    month:   { label: '月会员',   ico: '🌿', cls: 'mt-month' },
+    year:    { label: '年会员',   ico: '🌳', cls: 'mt-year' },
+    forever: { label: '永久会员', ico: '👑', cls: 'mt-forever' },
+  };
+  var MDAY = { week: 7, month: 30, year: 365 };
+  var FALLBACK_PRICE = { none: 0, week: 4, month: 12, year: 24, forever: 59.9 };
+
+  /** 取会员态对象（兼容 /admin/members 的扁平结构与 /admin/students 的 member 子对象） */
+  function memberOf(row) {
+    if (!row) return null;
+    return row.member || row;
+  }
+
+  /** 服务端时间字符串 → 'YYYY-MM-DD HH:mm:ss'（含秒，会员到期必须精确到秒） */
+  function fmtSec(v) {
+    var t = U.toDate(v);
+    if (!t) return '—';
+    function p2(n) { return (n < 10 ? '0' : '') + n; }
+    return t.getFullYear() + '-' + p2(t.getMonth() + 1) + '-' + p2(t.getDate()) + ' ' +
+      p2(t.getHours()) + ':' + p2(t.getMinutes()) + ':' + p2(t.getSeconds());
+  }
+
+  /** 毫秒 → 「x天x时x分x秒」 */
+  function remainCn(ms) {
+    if (ms == null || !isFinite(ms)) return '永久';
+    var s = Math.max(0, Math.floor(ms / 1000));
+    var dd = Math.floor(s / 86400); s -= dd * 86400;
+    var hh = Math.floor(s / 3600);  s -= hh * 3600;
+    var mm = Math.floor(s / 60);    s -= mm * 60;
+    return dd + '天' + hh + '时' + mm + '分' + s + '秒';
+  }
+
+  /** 会员等级徽标组合 */
+  function memberChip(m) {
+    if (!m) return '';
+    var meta = MTYPE_META[m.type] || MTYPE_META.none;
+    var out = '<span class="mchip ' + meta.cls + '">' + meta.ico + ' ' + U.esc(meta.label) + '</span>';
+    if (m.permanent) out += '<span class="mchip mt-perm">∞ 永久</span>';
+    if (m.expired) out += '<span class="mchip mt-exp">已过期</span>';
+    else if (m.almostDue) out += '<span class="mchip mt-due">不足 3 天</span>';
+    return out;
+  }
+
+  /** 到期单元格 */
+  function memberExpireCell(m) {
+    if (!m) return '<span class="dim">—</span>';
+    if (m.permanent) return '<span class="mt-forever-t">永久有效</span>';
+    if (!m.isSuper) return '<span class="dim">—</span>';
+    return '<div class="num nowrap">' + U.esc(fmtSec(m.expireAt)) + '</div>' +
+      '<div class="xsmall ' + (m.almostDue ? 'mt-due-t' : 'dim') + '">剩 ' + remainCn(m.remainMs) + '</div>';
+  }
+
+  /* ═══════════════════ 视图：会员管理 ═══════════════════ */
+
+  A.members = {
+    title: '会员管理',
+    icon: '👑',
+    nav: true,
+    group: '会员',
+    render: function (host) {
+      host.innerHTML = U.loading('正在加载会员数据…');
+
+      var params = {};
+      if (S.memberQuery) params.keyword = S.memberQuery;
+      if (S.memberType) params.memberType = S.memberType;
+      if (S.memberStatus !== '') params.status = S.memberStatus;
+
+      Promise.all([API.admin.members(params), API.admin.exportLogs(60)]).then(function (res) {
+        var r = res[0] || {};
+        var items = r.items || [];
+        var sum = r.summary || {};
+        var opts = r.options || [];
+        var exps = (res[1] && res[1].items) || [];
+
+        var html = '';
+
+        html += '<div class="page-head">' +
+          '<div><h2>👑 会员管理</h2>' +
+            '<div class="ph-sub">开通 / 续费 / 到期降级 / 禁用与恢复 · 剩余时长按秒实时计算' +
+              (r.freeChapter ? ' · 免费章节：' + U.esc(r.freeChapter.title) : '') + '</div></div>' +
+          '<div class="ph-actions">' +
+            '<button class="btn" data-act="refresh" type="button">🔄 刷新</button>' +
+            '<button class="btn btn-primary" data-mem-pick type="button">💎 快速开通</button>' +
+          '</div>' +
+        '</div>';
+
+        html += '<div class="stats-grid">' +
+          statCard('👥', '账号总数', U.num(sum.total), '人', '当前筛选结果', '') +
+          statCard('👑', '超级会员', U.num(sum.superCount), '人', '可学全章节 · 可打卡 · 可导出', 'accent') +
+          statCard('🙍', '普通会员', U.num(sum.normalCount), '人', '仅第一章免费内容', '') +
+          statCard('⏳', '临期不足 3 天', U.num(sum.almostDueCount), '人',
+            sum.almostDueCount ? '建议提醒续费' : '暂无临期', sum.almostDueCount ? 'warn' : 'ok') +
+          statCard('🚫', '已禁用', U.num(sum.disabledCount), '人',
+            sum.disabledCount ? '被禁止使用平台' : '全部可正常使用', sum.disabledCount ? 'danger' : '') +
+        '</div>';
+
+        /* 筛选条 */
+        html += '<div class="filters">' +
+          '<span class="fl-label">搜索</span>' +
+          '<input class="input" id="memSearch" type="search" placeholder="账号 / 姓名 / 手机号 / 学号" ' +
+            'value="' + U.escAttr(S.memberQuery) + '" style="min-width:230px">' +
+          '<span class="fl-label">会员</span>' +
+          '<select class="select" id="memType">' +
+            '<option value="">全部等级</option>' +
+            opts.map(function (o) {
+              return '<option value="' + o.code + '"' + (S.memberType === o.code ? ' selected' : '') + '>' +
+                U.esc(o.label) + '</option>';
+            }).join('') +
+          '</select>' +
+          '<span class="fl-label">使用状态</span>' +
+          '<select class="select" id="memStatus">' +
+            '<option value="">全部状态</option>' +
+            '<option value="1"' + (S.memberStatus === '1' ? ' selected' : '') + '>允许使用</option>' +
+            '<option value="0"' + (S.memberStatus === '0' ? ' selected' : '') + '>已禁用</option>' +
+          '</select>' +
+          '<span class="spacer"></span>' +
+          '<span class="dim small">共 <b class="num">' + items.length + '</b> 条</span>' +
+          '<button class="btn btn-sm" data-act="clear" type="button">清空筛选</button>' +
+        '</div>';
+
+        /* 会员表格 */
+        if (!items.length) {
+          html += emptyBox('👑', '没有符合条件的账号',
+            '换个筛选条件试试；如果还没有学生账号，请先到「学生名单」创建',
+            '<button class="btn btn-primary" data-act="clear" type="button">清空筛选</button>');
+        } else {
+          html += '<div class="panel"><div class="panel-body flush tbl-scroll">' +
+            '<table class="tbl" id="memTable"><thead><tr>' +
+              '<th>账号</th>' +
+              '<th style="width:124px">手机号</th>' +
+              '<th style="width:190px">会员等级</th>' +
+              '<th style="width:190px">到期时间 / 剩余</th>' +
+              '<th style="width:112px">使用状态</th>' +
+              '<th style="width:268px">操作</th>' +
+            '</tr></thead><tbody>' +
+            items.map(function (m) {
+              return '<tr' + (m.disabled ? ' class="row-off"' : '') + '>' +
+                '<td class="nowrap">' +
+                  '<div class="u-cell">' +
+                    '<span class="pavatar ' + U.avatarClass(m.id) + '">' +
+                      U.esc(U.initial(m.name, m.username)) + '</span>' +
+                    '<div class="u-cell-main">' +
+                      '<div class="bold">' + U.esc(m.name || m.username) +
+                        (m.isSuper ? '<span class="super-star" title="超级会员">★</span>' : '') + '</div>' +
+                      '<div class="dim xsmall">@' + U.esc(m.username) +
+                        (m.sno ? ' · ' + U.esc(m.sno) : '') +
+                        (m.className ? ' · ' + U.esc(m.className) : '') + '</div>' +
+                    '</div>' +
+                  '</div>' +
+                '</td>' +
+                '<td class="num xsmall nowrap">' + U.esc(m.phone || '—') + '</td>' +
+                '<td>' + memberChip(m) + '</td>' +
+                '<td>' + memberExpireCell(m) + '</td>' +
+                '<td>' + (m.disabled
+                  ? '<span class="mchip mt-dis">🚫 已禁用</span>'
+                  : '<span class="mchip mt-on">✅ 允许使用</span>') + '</td>' +
+                '<td class="nowrap">' +
+                  '<button class="btn btn-sm btn-primary" data-mem-grant="' + m.id + '" type="button">' +
+                    (m.isSuper ? '续费 / 改档' : '开通会员') + '</button> ' +
+                  '<button class="btn btn-sm' + (m.disabled ? '' : ' btn-danger') + '" data-mem-toggle="' + m.id +
+                    '" data-to="' + (m.disabled ? 1 : 0) + '" type="button">' +
+                    (m.disabled ? '恢复使用' : '禁止使用') + '</button> ' +
+                  '<button class="btn btn-sm" data-mem-logs="' + m.id + '" type="button">变更流水</button>' +
+                '</td>' +
+              '</tr>';
+            }).join('') +
+            '</tbody></table></div></div>';
+        }
+
+        /* 规则说明 */
+        html += '<div class="note info"><span class="n-ico">💡</span><span>' +
+          '<b>会员规则：</b>周会员 = 自设置时刻起 7 天整、月会员 = 30 天整、年会员 = 365 天整、永久会员 = 无到期时间。' +
+          '续费按「新的到期时刻 = max(当前时刻, 原到期时刻) + 本次时长」叠加，' +
+          '可在任意时刻（含 3 秒内）连续设置同类型或不同类型，不做频率限制。' +
+          '会员到期后自动降级为普通会员，并立即强制退出打卡平台登录。' +
+          '</span></div>';
+
+        /* 导出流水 */
+        html += '<div class="sect-bar">' +
+          '<h3>📤 打卡记录导出流水</h3>' +
+          '<span class="dim small">最近 ' + exps.length + ' 条 · 超级会员导出 CSV / Excel / PDF 时自动留痕</span>' +
+        '</div>';
+
+        html += exps.length
+          ? '<div class="panel"><div class="panel-body flush tbl-scroll">' +
+              '<table class="tbl"><thead><tr>' +
+                '<th style="width:152px">时间</th><th>学生</th><th style="width:84px">格式</th>' +
+                '<th style="width:92px">记录数</th><th>日期范围</th><th style="width:132px">来源 IP</th>' +
+              '</tr></thead><tbody>' +
+              exps.map(function (x) {
+                return '<tr>' +
+                  '<td class="num xsmall nowrap">' + U.esc(fmtSec(x.createdAt)) + '</td>' +
+                  '<td class="nowrap"><span class="bold">' + U.esc(x.name || x.username) + '</span>' +
+                    '<div class="dim xsmall">@' + U.esc(x.username) + '</div></td>' +
+                  '<td><span class="chip xsmall">' + U.esc(String(x.format || '').toUpperCase()) + '</span></td>' +
+                  '<td class="num">' + U.num(x.rows) + '</td>' +
+                  '<td class="xsmall dim2">' + U.esc((x.dateFrom || '不限') + ' ~ ' + (x.dateTo || '不限')) + '</td>' +
+                  '<td class="num xsmall">' + U.esc(x.ip || '—') + '</td>' +
+                '</tr>';
+              }).join('') +
+              '</tbody></table></div></div>'
+          : emptyBox('📤', '还没有导出记录', '超级会员在打卡平台导出 CSV / Excel / PDF 时会在这里留下记录');
+
+        host.innerHTML = html;
+        bindMemberFilters(host);
+
+        // 顶部的 🔄 刷新 由 #app 全局委托处理
+      }).catch(function (e) {
+        host.innerHTML = U.errorBox(e.message,
+          '<button class="btn btn-primary" data-act="retry" type="button">重新加载</button>');
+        var rt = host.querySelector('[data-act="retry"]');
+        if (rt) rt.addEventListener('click', function () { A.members.render(host); });
+      });
+    },
+  };
+
+  function bindMemberFilters(host) {
+    var q = host.querySelector('#memSearch');
+    var t = host.querySelector('#memType');
+    var s = host.querySelector('#memStatus');
+
+    if (q) {
+      var fire = U.debounce(function () {
+        S.memberQuery = (q.value || '').trim();
+        A.members.render(host);
+      }, 320);
+      q.addEventListener('input', fire);
+    }
+    if (t) t.addEventListener('change', function () { S.memberType = t.value; A.members.render(host); });
+    if (s) s.addEventListener('change', function () { S.memberStatus = s.value; A.members.render(host); });
+
+    U.qsa('[data-act="clear"]', host).forEach(function (c) {
+      c.addEventListener('click', function () {
+        S.memberQuery = ''; S.memberType = ''; S.memberStatus = '';
+        A.members.render(host);
+      });
+    });
+  }
+
+  /* ───────── 开通 / 续费 弹层 ───────── */
+
+  /** 快速开通：先选账号再走标准开通流程 */
+  function openMemberPicker() {
+    API.admin.students().then(function (r) {
+      var list = r.items || [];
+      if (!list.length) { UI.warn('还没有学生账号，请先到「学生名单」创建'); return; }
+
+      UI.modal({
+        title: '快速开通会员',
+        size: 'sm',
+        body:
+          '<div class="field"><label class="field-label">选择账号</label>' +
+            '<select class="select" id="pickStu">' +
+              list.map(function (x) {
+                var m = memberOf(x);
+                var tag = m && m.isSuper ? '（' + (m.permanent ? '永久会员' : MTYPE_META[m.type].label) + '）' : '（普通会员）';
+                return '<option value="' + x.id + '">' +
+                  U.esc(x.name || x.username) + ' · @' + U.esc(x.username) + tag + '</option>';
+              }).join('') +
+            '</select></div>' +
+          '<div class="note info"><span class="n-ico">💡</span><span>' +
+            '选好账号后进入开通面板，可实时预览叠加后的到期时间。</span></div>',
+        foot: '<button class="btn" data-act="no" type="button">取消</button>' +
+              '<button class="btn btn-primary" data-act="yes" type="button">下一步</button>',
+        onMount: function (inst) {
+          inst.foot.querySelector('[data-act="no"]').addEventListener('click', function () { inst.close(); });
+          inst.foot.querySelector('[data-act="yes"]').addEventListener('click', function () {
+            var id = Number(inst.query('#pickStu').value);
+            var row = list.filter(function (x) { return x.id === id; })[0];
+            inst.close();
+            openMemberGrant(row, function () {
+              if (STORE.state.view === 'members') A.members.render(d.getElementById('view'));
+            });
+          });
+        },
+      });
+    }).catch(UI.errToast);
+  }
+
+  function openMemberGrant(row, onDone) {
+    var cur = memberOf(row) || {};
+    API.admin.pricing().then(function (pr) {
+      var priceOf = {};
+      (pr.items || []).forEach(function (p) { priceOf[p.code] = p.price; });
+      renderGrantDialog(row, cur, priceOf, onDone);
+    }).catch(function () { renderGrantDialog(row, cur, FALLBACK_PRICE, onDone); });
+  }
+
+  function renderGrantDialog(row, cur, priceOf, onDone) {
+    function price(code) {
+      var v = priceOf[code];
+      return v == null ? FALLBACK_PRICE[code] : v;
+    }
+
+    var curType = cur.rawType || cur.type || 'none';
+    var curExpMs = cur.expireAt && cur.isSuper && !cur.permanent ? U.toDate(cur.expireAt).getTime() : 0;
+    var isPerm = curType === 'forever';
+
+    var CARDS = [
+      { code: 'none',    label: '普通会员', days: 0,   ico: '🙍', sub: '仅第一章免费内容', danger: true },
+      { code: 'week',    label: '周会员',   days: 7,   ico: '🌱', sub: '7 天整' },
+      { code: 'month',   label: '月会员',   days: 30,  ico: '🌿', sub: '30 天整' },
+      { code: 'year',    label: '年会员',   days: 365, ico: '🌳', sub: '365 天整' },
+      { code: 'forever', label: '永久会员', days: 0,   ico: '👑', sub: '无到期时间' },
+    ];
+
+    /** 依据后端同一套规则做本地预览 */
+    function previewFor(code) {
+      if (code === 'none') {
+        return '<span class="pv-warn">立即变更为普通会员' +
+          (cur.isSuper ? '，并强制退出打卡平台登录' : '') + '</span>';
+      }
+      if (code === 'forever' || isPerm) {
+        return '<span class="pv-perm">👑 永久有效（无到期时间，之后继续充值时仍保持永久）</span>';
+      }
+      var now = Date.now();
+      var base = Math.max(now, curExpMs || 0);
+      var end = base + (MDAY[code] || 0) * 86400000;
+      var stacked = curExpMs > now;
+      return '<b class="pv-time">' + U.esc(fmtSec(new Date(end))) + '</b> 到期' +
+        (stacked
+          ? '<span class="pv-tag">在原到期时间上叠加 ' + MDAY[code] + ' 天</span>'
+          : '<span class="pv-tag">自当前时刻起 ' + MDAY[code] + ' 天整</span>');
+    }
+
+    var body = '';
+    body += '<div class="grant-cur">' +
+      '<div class="gc-av pavatar ' + U.avatarClass(cur.id || 0) + '">' +
+        U.esc(U.initial(cur.name, cur.username)) + '</div>' +
+      '<div class="gc-main">' +
+        '<div class="gc-name">' + U.esc(cur.name || cur.username || '—') +
+          '<span class="dim small"> @' + U.esc(cur.username || '') + '</span></div>' +
+        '<div class="gc-sub">📞 ' + U.esc(cur.phone || '—') +
+          (cur.disabled ? ' · <span class="mt-dis-t">🚫 账号已禁用</span>' : '') + '</div>' +
+      '</div>' +
+      '<div class="gc-right">' + memberChip(cur) + '</div>' +
+    '</div>';
+
+    body += '<div class="grant-cur2">' +
+      '<div class="info-cell"><div class="ic-k">当前到期时间</div><div class="ic-v">' +
+        (cur.permanent ? '永久有效' : (cur.isSuper ? U.esc(fmtSec(cur.expireAt)) : '—')) + '</div></div>' +
+      '<div class="info-cell"><div class="ic-k">当前剩余</div><div class="ic-v ' +
+        (cur.almostDue ? 'mt-due-t' : '') + '">' +
+        (cur.permanent ? '永久' : (cur.isSuper ? remainCn(cur.remainMs) : '—')) + '</div></div>' +
+    '</div>';
+
+    body += '<div class="sect-title"><span class="st-n">1</span>选择要设置的会员类型</div>';
+    body += '<div class="type-picker" id="typePicker">' +
+      CARDS.map(function (c) {
+        var on = (c.code === 'none' && !cur.isSuper && !isPerm) ? true : false;
+        return '<label class="tp-opt' + (c.danger ? ' tp-danger' : '') + (on ? ' on' : '') + '" data-tp="' + c.code + '">' +
+          '<input type="radio" name="mtp" value="' + c.code + '"' + (on ? ' checked' : '') + '>' +
+          '<span class="tp-ico">' + c.ico + '</span>' +
+          '<span class="tp-body">' +
+            '<span class="tp-name">' + U.esc(c.label) + '</span>' +
+            '<span class="tp-sub">' + U.esc(c.sub) + '</span>' +
+          '</span>' +
+          '<span class="tp-price">' + (price(c.code) > 0 ? '¥' + price(c.code) : '免费') + '</span>' +
+        '</label>';
+      }).join('') +
+    '</div>';
+
+    body += '<div class="sect-title"><span class="st-n">2</span>设置后预计</div>';
+    body += '<div class="pv-box" id="pvBox">' + previewFor('none') + '</div>';
+
+    if (isPerm) {
+      body += '<div class="note warn"><span class="n-ico">👑</span><span>' +
+        '该账号已是永久会员 —— 永久会员不可逆，之后再设置任何会员类型都会保持永久有效。</span></div>';
+    }
+
+    body += '<div class="sect-title"><span class="st-n">3</span>备注（可选）</div>' +
+      '<div class="field"><input class="input" id="grantRemark" type="text" ' +
+        'placeholder="如：9 月续费 / 线下支付 / 活动赠送"></div>';
+
+    body += '<div class="note info"><span class="n-ico">💡</span><span>' +
+      '叠加规则：新的到期时刻 = max(当前时刻, 原到期时刻) + 本次时长。' +
+      '例如剩余 2 天 2 小时 45 分 1 秒时充周会员，将变为 9 天 2 小时 45 分 1 秒。</span></div>';
+
+    var m = UI.modal({
+      title: '开通 / 续费 · ' + (cur.name || cur.username || ''),
+      size: 'lg',
+      closeOnBg: false,
+      body: body,
+      foot: '<button class="btn" data-act="no" type="button">取消</button>' +
+            '<button class="btn btn-primary" data-act="yes" type="button">确认设置</button>',
+      onMount: function (inst) {
+        var picker = inst.query('#typePicker');
+        var pvBox = inst.query('#pvBox');
+        var picked = 'none';
+
+        function select(code) {
+          picked = code;
+          U.qsa('.tp-opt', picker).forEach(function (el) {
+            var on = el.dataset.tp === code;
+            el.classList.toggle('on', on);
+            var r = el.querySelector('input');
+            if (r) r.checked = on;
+          });
+          pvBox.innerHTML = previewFor(code);
+          pvBox.classList.toggle('pv-danger', code === 'none');
+        }
+
+        picker.addEventListener('click', function (e) {
+          var opt = e.target.closest && e.target.closest('[data-tp]');
+          if (!opt) return;
+          e.preventDefault();
+          select(opt.dataset.tp);
+        });
+        picker.addEventListener('change', function (e) {
+          if (e.target.name === 'mtp') select(e.target.value);
+        });
+
+        inst.foot.querySelector('[data-act="no"]').addEventListener('click', function () { inst.close(); });
+
+        inst.foot.querySelector('[data-act="yes"]').addEventListener('click', function () {
+          var btn = this;
+          var remark = (inst.query('#grantRemark').value || '').trim();
+          var rs = UI.btnBusy(btn, '设置中…');
+          API.admin.memberGrant(cur.id, picked, remark).then(function (res) {
+            var after = res.member || res.after || {};
+            var txt;
+            if (!after.isSuper) {
+              txt = '已变更为普通会员：仅可学习第一章，无法登录打卡平台';
+            } else if (after.permanent) {
+              txt = '已设置为永久会员（无到期时间）';
+            } else {
+              txt = '到期时间：' + fmtSec(after.expireAt);
+              if (res.stacked) txt = '叠加续费 +' + (res.daysAdded || 0) + ' 天 · ' + txt;
+            }
+            UI.toast(txt, 'ok', '设置成功', 5200);
+            m.close();
+            if (typeof onDone === 'function') onDone(res);
+          }).catch(function (e) { UI.errToast(e); }).then(rs);
+        });
+      },
+    });
+  }
+
+  /* ───────── 会员变更流水弹层 ───────── */
+
+  function openMemberLogs(id) {
+    API.admin.memberLogs(id).then(function (r) {
+      var items = r.items || [];
+      var body = items.length
+        ? '<div class="mflow">' + items.map(function (x) {
+            var cls = x.action === 'disable' ? 'is-bad'
+              : x.action === 'enable' ? 'is-ok'
+              : x.action === 'expire' ? 'is-warn'
+              : x.action === 'renew' ? 'is-accent' : '';
+            return '<div class="mf-item ' + cls + '">' +
+              '<div class="mf-dot"></div>' +
+              '<div class="mf-body">' +
+                '<div class="mf-head">' +
+                  '<span class="mf-act">' + U.esc(x.actionText) + '</span>' +
+                  '<span class="mf-time">' + U.esc(fmtSec(x.createdAt)) + '</span>' +
+                '</div>' +
+                '<div class="mf-line">' +
+                  '<span class="mf-from">' + U.esc(x.typeFrom) + '</span>' +
+                  '<span class="mf-arrow">→</span>' +
+                  '<span class="mf-to">' + U.esc(x.typeTo) + '</span>' +
+                  (x.daysAdded ? '<span class="chip xsmall">+' + x.daysAdded + ' 天</span>' : '') +
+                '</div>' +
+                (x.expireTo ? '<div class="mf-exp">到期：' + U.esc(x.expireTo) + '</div>' : '') +
+                (x.remark ? '<div class="mf-remark">📝 ' + U.esc(x.remark) + '</div>' : '') +
+                '<div class="mf-op">操作人：' + U.esc(x.operator) + '</div>' +
+              '</div>' +
+            '</div>';
+          }).join('') + '</div>'
+        : U.empty('🕘', '暂无变更记录', '开通、续费、到期降级、禁用与恢复都会记录在这里');
+
+      UI.modal({
+        title: '会员变更流水',
+        size: 'lg',
+        body: body,
+        foot: '<button class="btn btn-primary" data-act="ok" type="button">知道了</button>',
+        onMount: function (inst) {
+          inst.foot.querySelector('[data-act="ok"]').addEventListener('click', function () { inst.close(); });
+        },
+      });
+    }).catch(UI.errToast);
+  }
+
+  /* ═══════════════════ 视图：定价配置 ═══════════════════ */
+
+  A.pricing = {
+    title: '定价配置',
+    icon: '💎',
+    nav: true,
+    group: '会员',
+    render: function (host) {
+      host.innerHTML = U.loading('正在加载定价档位…');
+
+      API.admin.pricing().then(function (r) {
+        var items = r.items || [];
+
+        var html = '';
+        html += '<div class="page-head">' +
+          '<div><h2>💎 定价配置</h2>' +
+            '<div class="ph-sub">价格与权益文案会实时同步到学习平台和打卡平台的「定价」页面</div></div>' +
+          '<div class="ph-actions">' +
+            '<button class="btn" data-act="refresh" type="button">🔄 刷新</button>' +
+          '</div>' +
+        '</div>';
+
+        html += '<div class="price-admin-grid">' +
+          items.map(function (p) {
+            var durText = p.code === 'forever' ? '永久有效'
+              : p.code === 'none' ? '不限期（免费）'
+              : p.days + ' 天整';
+            return '<div class="pcard' + (p.hot ? ' hot' : '') + (p.enabled ? '' : ' off') + '">' +
+              '<div class="pcard-head">' +
+                '<span class="pcard-code">' + U.esc(p.code) + '</span>' +
+                (p.hot ? '<span class="pcard-tag hot-tag">推荐</span>' : '') +
+                (p.enabled ? '<span class="pcard-tag on-tag">上架中</span>'
+                           : '<span class="pcard-tag off-tag">已下架</span>') +
+              '</div>' +
+              '<div class="field"><label class="field-label">档位名称</label>' +
+                '<input class="input" data-f="label" type="text" value="' + U.escAttr(p.label) + '"></div>' +
+              '<div class="field"><label class="field-label">价格（元）</label>' +
+                '<input class="input" data-f="price" type="number" step="0.01" min="0" value="' + p.price + '"></div>' +
+              '<div class="field"><label class="field-label">时长</label>' +
+                '<input class="input" type="text" value="' + U.esc(durText) + '" readonly style="opacity:.65"></div>' +
+              '<div class="field"><label class="field-label">一句话卖点</label>' +
+                '<input class="input" data-f="tagline" type="text" value="' + U.escAttr(p.tagline || '') + '"></div>' +
+              '<div class="field"><label class="field-label">权益说明（每行一条）</label>' +
+                '<textarea class="textarea" data-f="perks" rows="5">' +
+                  U.esc((p.perks || []).join('\n')) + '</textarea></div>' +
+              '<div class="pcard-toggles">' +
+                '<label class="chk"><input type="checkbox" data-f="hot"' + (p.hot ? ' checked' : '') + '> 标记推荐</label>' +
+                '<label class="chk"><input type="checkbox" data-f="enabled"' + (p.enabled ? ' checked' : '') + '> 上架展示</label>' +
+                '<label class="chk chk-num">排序' +
+                  '<input class="input input-mini" type="number" data-f="sortOrder" min="0" value="' + p.sortOrder + '"></label>' +
+              '</div>' +
+              '<button class="btn btn-primary pcard-save" data-price-save="' + p.code + '" type="button">保存该档位</button>' +
+            '</div>';
+          }).join('') +
+        '</div>';
+
+        html += '<div class="note warn"><span class="n-ico">⚠️</span><span>' +
+          '改价只影响前端展示，不会改变已开通用户的到期时间。' +
+          '「普通会员」档位建议保持 0 元；若要停止销售某档位，取消勾选「上架展示」即可。' +
+          '</span></div>';
+
+        host.innerHTML = html;
+      }).catch(function (e) {
+        host.innerHTML = U.errorBox(e.message,
+          '<button class="btn btn-primary" data-act="retry" type="button">重新加载</button>');
+        var rt = host.querySelector('[data-act="retry"]');
+        if (rt) rt.addEventListener('click', function () { A.pricing.render(host); });
+      });
+    },
+  };
+
   /* ═══════════════════ 视图：我的资料 ═══════════════════ */
 
   A.profile = {
@@ -2075,6 +2637,82 @@
         return;
       }
 
+      /* ───── 会员管理 ───── */
+
+      // 快速开通（先选账号）
+      if (c('[data-mem-pick]')) { openMemberPicker(); return; }
+
+      // 开通 / 续费 / 改档
+      var mg = c('[data-mem-grant]');
+      if (mg) {
+        var grantId = Number(mg.dataset.memGrant);
+        API.admin.members({}).then(function (r) {
+          var row = (r.items || []).filter(function (x) { return x.id === grantId; })[0];
+          if (!row) { UI.err('未找到该账号，请刷新后重试'); return; }
+          openMemberGrant(row, function () {
+            if (STORE.state.view === 'members') A.members.render(d.getElementById('view'));
+          });
+        }).catch(UI.errToast);
+        return;
+      }
+
+      // 禁用 / 恢复使用
+      var mtg = c('[data-mem-toggle]');
+      if (mtg) {
+        var tgId = Number(mtg.dataset.memToggle);
+        var toStatus = Number(mtg.dataset.to) ? 1 : 0;
+        var actName = toStatus ? '恢复使用' : '禁止使用';
+        UI.confirm({
+          title: actName + '账号',
+          message: '确定要' + actName + '该账号吗？',
+          detail: toStatus
+            ? '恢复后该账号可继续学习全章节、打卡、导出记录与登录打卡平台。'
+            : '禁用后该账号将无法使用学习平台的任何功能（学习、打卡、个人信息），' +
+              '并会立即从打卡平台强制退出登录；解除禁用后即可恢复。',
+          okText: '确认' + actName,
+          cancelText: '再想想',
+          danger: !toStatus,
+        }).then(function (ok) {
+          if (!ok) return;
+          var rs = UI.btnBusy(mtg, '处理中…');
+          API.admin.memberStatus(tgId, toStatus).then(function () {
+            UI.toast('已' + actName, toStatus ? 'ok' : 'warn', '操作成功');
+            if (STORE.state.view === 'members') A.members.render(d.getElementById('view'));
+          }).catch(UI.errToast).then(rs);
+        });
+        return;
+      }
+
+      // 会员变更流水
+      var mlg = c('[data-mem-logs]');
+      if (mlg) { openMemberLogs(Number(mlg.dataset.memLogs)); return; }
+
+      // 定价档位保存
+      var psv = c('[data-price-save]');
+      if (psv) {
+        var card = psv.closest('.pcard');
+        if (!card) return;
+        var code = psv.dataset.priceSave;
+        var patch = {
+          label: (card.querySelector('[data-f="label"]').value || '').trim(),
+          price: Number(card.querySelector('[data-f="price"]').value),
+          tagline: (card.querySelector('[data-f="tagline"]').value || '').trim(),
+          perks: (card.querySelector('[data-f="perks"]').value || '')
+            .split('\n').map(function (x) { return x.trim(); }).filter(Boolean),
+          hot: card.querySelector('[data-f="hot"]').checked,
+          enabled: card.querySelector('[data-f="enabled"]').checked,
+          sortOrder: Number(card.querySelector('[data-f="sortOrder"]').value) || 0,
+        };
+        if (!patch.label) { UI.err('请填写档位名称'); return; }
+        if (!isFinite(patch.price) || patch.price < 0) { UI.err('价格必须是不小于 0 的数字'); return; }
+        var rs2 = UI.btnBusy(psv, '保存中…');
+        API.admin.pricingUpdate(code, patch).then(function () {
+          UI.toast('「' + patch.label + '」已保存并同步到前端定价页', 'ok', '保存成功');
+          if (STORE.state.view === 'pricing') A.pricing.render(d.getElementById('view'));
+        }).catch(UI.errToast).then(rs2);
+        return;
+      }
+
       /* ───── 通用动作 ───── */
 
       if (c('[data-act="pwd"]')) { openPasswordDialog(); return; }
@@ -2140,11 +2778,13 @@
 
   A.bindEvents = bindEvents;
   A.state = S;
-  A.KEYS = ['dashboard', 'students', 'units', 'urges', 'questions', 'logs', 'profile'];
+  A.KEYS = ['dashboard', 'students', 'members', 'pricing', 'units', 'urges', 'questions', 'logs', 'profile'];
   A.openUrgeDialog = openUrgeDialog;
   A.openStudentDetail = openStudentDetail;
   A.openUnitEditor = openUnitEditor;
   A.openQuestionEditor = openQuestionEditor;
+  A.openMemberGrant = openMemberGrant;
+  A.openMemberLogs = openMemberLogs;
 
   w.AdminView = A;
 })(window, document);

@@ -14,6 +14,7 @@ const cors = require('cors');
 
 const db = require('./db');
 const auth = require('./auth');
+const member = require('./member');
 
 const app = express();
 app.disable('x-powered-by');
@@ -59,16 +60,27 @@ app.get('/api/health', async (_req, res) => {
 });
 
 /* ── 业务路由 ── */
-// 注意顺序：/api/admin 必须先于 /api 注册，否则学生端守卫中间件会先拦截管理端请求
+// 注意顺序：/api/auth 与 /api/member 必须先于 /api 注册，
+// 否则学生端守卫中间件会先拦截这些不需要学生身份或公开的接口
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/member', require('./routes/member'));  // 会员：定价 / 我的会员 / 门禁 / 流水
 app.use('/api/admin', require('./routes/admin'));   // 管理端：/api/admin/*
 app.use('/api', require('./routes/student'));       // 学生端：/api/tree /api/checkins /api/my/*
 
-/* ── 静态前端（可选：把 web/ 一起部署时） ── */
+/* ── 静态前端（可选：把 web/ 与 learn/ 一起部署时） ── */
+/*   /        → 打卡平台（web/）
+     /learn/  → 学习平台（learn/，由 study_linux.html 接入后端生成）  */
 const WEB_DIR = path.resolve(__dirname, '..', '..', 'web');
+const LEARN_DIR = path.resolve(__dirname, '..', '..', 'learn');
+
+if (fs.existsSync(LEARN_DIR)) {
+  app.use('/learn', express.static(LEARN_DIR, { extensions: ['html'], maxAge: '5m' }));
+  app.get('/learn', (_req, res) => res.redirect('/learn/'));
+}
+
 if (fs.existsSync(WEB_DIR)) {
   app.use('/', express.static(WEB_DIR, { extensions: ['html'], maxAge: '5m' }));
-  app.get(/^\/(?!api\/).*/, (_req, res) => {
+  app.get(/^\/(?!api\/|learn\/).*/, (_req, res) => {
     res.sendFile(path.join(WEB_DIR, 'index.html'));
   });
 }
@@ -88,6 +100,7 @@ app.use((err, _req, res, _next) => {
 /* ── 启动 ── */
 const PORT = Number(process.env.PORT || 3000);
 auth.startTokenGc();
+member.startMemberGc();   // 每分钟扫描会员到期 → 自动降级为普通会员并强制退出
 
 db.ping()
   .then(() => console.log('✔ 数据库连接成功：' + (process.env.DB_NAME || 'linux_study')))

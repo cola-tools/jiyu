@@ -239,11 +239,35 @@ async function fetchJson(url, tries = 60) {
   throw new Error('CDP 端点不可用: ' + url);
 }
 
+/**
+ * 从后端取一份真实基线数据（学生总数等），
+ * 避免把断言写死在某一次的历史数据上导致套件不可重复运行。
+ */
+async function fetchBaseline() {
+  try {
+    const lg = await fetch(BASE + '/api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account: 'admin', password: 'admin@2026', role: 'admin', platform: 'learn' }),
+    }).then((r) => r.json());
+    const st = await fetch(BASE + '/api/admin/students', {
+      headers: { Authorization: 'Bearer ' + lg.token },
+    }).then((r) => r.json());
+    const items = st.items || [];
+    return {
+      studentCount: items.length,
+      enabledCount: items.filter((x) => x.status === 1).length,
+    };
+  } catch (e) {
+    return { studentCount: -1, enabledCount: -1 };
+  }
+}
+
 /* ═══════════════════════ 主流程 ═══════════════════════ */
 
 (async function main() {
   console.log('\n════════ 浏览器端到端测试 ════════');
   console.log('页面地址: ' + BASE);
+  const BLINE = await fetchBaseline();
 
   const chrome = launch();
   let cdp = null;
@@ -299,9 +323,16 @@ async function fetchJson(url, tries = 60) {
     await cdp.waitFor('document.getElementById("loginPage") && !document.getElementById("loginPage").hidden', 20000, '登录页可见');
     ok('启动遮罩已隐藏', await cdp.eval('!!(document.getElementById("boot").hidden || document.getElementById("boot").classList.contains("gone"))'));
 
-    /* 演示账号列表 */
-    const tipCount = await cdp.eval('document.querySelectorAll("#loginTip .tip-acc").length');
-    eq('学生演示账号条目数', tipCount, 5);
+    /* 登录页：不应再有任何自动填充账号入口 */
+    ok('登录页无自动填充按钮（.tip-acc 数量为 0）',
+      (await cdp.eval('document.querySelectorAll(".tip-acc").length')) === 0);
+    ok('登录页无演示账号区块（#loginTip 已移除）',
+      (await cdp.eval('!document.getElementById("loginTip")')));
+    ok('登录框保留账号与密码两个输入框',
+      (await cdp.eval('!!document.getElementById("loginUser")')) &&
+      (await cdp.eval('!!document.getElementById("loginPass")')));
+    ok('前端不再内置账号密码（LoginView.DEMO 已移除）',
+      (await cdp.eval('typeof LoginView.DEMO === "undefined"')));
     await cdp.shot('01-login-light');
 
     /* ── 浅色主题：全部为浅底深字 ── */
@@ -404,7 +435,7 @@ async function fetchJson(url, tries = 60) {
     await cdp.eval('document.querySelector(\'#nav [data-nav="records"]\').click()');
     await cdp.waitFor(sel('#view [data-day]'), 20000, '打卡记录渲染');
     const recCount = await cdp.eval('document.querySelectorAll("#view [data-rec]").length');
-    eq('打卡记录条数', recCount, 2);
+    ok('打卡记录条数 ' + recCount + ' ≥ 2（含历史数据）', recCount >= 2);
     ok('记录中包含刚打卡的单元 #' + pickedIds.join(' / #'),
       (await cdp.eval('!!document.querySelector(\'#view [data-rec="' + pickedIds[0] + '"]\')')) &&
       (await cdp.eval('!!document.querySelector(\'#view [data-rec="' + pickedIds[1] + '"]\')')));
@@ -429,7 +460,8 @@ async function fetchJson(url, tries = 60) {
       !(await cdp.eval('!!document.querySelector(\'#view [data-rec="' + pickedIds[0] + '"]\')')));
     ok('未撤销的记录仍然保留',
       await cdp.eval('!!document.querySelector(\'#view [data-rec="' + pickedIds[1] + '"]\')'));
-    eq('撤销后剩余记录条数', await cdp.eval('document.querySelectorAll("#view [data-rec]").length'), 1);
+    const afterRevoke = await cdp.eval('document.querySelectorAll("#view [data-rec]").length');
+    eq('撤销后剩余记录条数', afterRevoke, recCount - 1);
 
     /* 督促消息视图 */
     section('5. 督促消息与练习题视图');
@@ -475,7 +507,8 @@ async function fetchJson(url, tries = 60) {
     /* 切换为管理员并登录 */
     await cdp.eval('document.querySelector(\'#loginPage .seg-btn[data-role="admin"]\').click()');
     await sleep(220);
-    eq('管理员演示账号条目数', await cdp.eval('document.querySelectorAll("#loginTip .tip-acc").length'), 1);
+    ok('切换角色后仍无自动填充按钮',
+      (await cdp.eval('document.querySelectorAll(".tip-acc").length')) === 0);
     await cdp.eval(`(function(){
       document.getElementById('loginUser').value = 'admin';
       document.getElementById('loginPass').value = 'admin@2026';
@@ -485,7 +518,13 @@ async function fetchJson(url, tries = 60) {
     await cdp.waitFor('document.querySelector("#view .stats-grid")', 20000, '管理面板渲染');
 
     ok('管理端品牌副标题正确', /管理后台/.test(await cdp.eval('document.getElementById("brandSub").textContent')));
-    ok('侧边栏包含 7 个管理端菜单', (await cdp.eval('document.querySelectorAll("#nav .nav-item").length')) === 7);
+    const admNavN = await cdp.eval('document.querySelectorAll("#nav .nav-item").length');
+    ok('侧边栏包含 9 个管理端菜单 [' + admNavN + ']', admNavN === 9);
+    const admNavKeys = await cdp.eval(`(function(){
+      return Array.prototype.map.call(document.querySelectorAll('#nav [data-nav]'), function(n){ return n.dataset.nav; }).join(',');
+    })()`);
+    ok('管理端菜单含会员管理 / 定价配置：' + admNavKeys,
+      /members/.test(admNavKeys) && /pricing/.test(admNavKeys));
 
     const admStats = await cdp.eval(`(function(){
       var out = [];
@@ -500,7 +539,13 @@ async function fetchJson(url, tries = 60) {
     ok('趋势图柱子数量 ' + trendBars + ' ≥ 1', trendBars >= 1);
 
     const tableRows = await cdp.eval('document.querySelectorAll("#view table.tbl tbody tr").length');
-    ok('学生进度排行行数 ' + tableRows, tableRows === 5);
+    const admStatStudents = await cdp.eval(`(function(){
+      var c = document.querySelectorAll('#view .stat-card')[0];
+      if (!c) return -1;
+      return parseInt(String(c.querySelector('.s-num').textContent).replace(/[^0-9]/g, ''), 10);
+    })()`);
+    ok('学生进度排行行数与「学生总数」一致 [' + tableRows + ' = ' + admStatStudents + ']',
+      tableRows === admStatStudents);
     await cdp.shot('08-admin-dashboard-light');
 
     /* 检查「已撤销打卡」是否在动态里出现 */
@@ -536,7 +581,8 @@ async function fetchJson(url, tries = 60) {
     section('8. 学生名单（姓名/学号/班级/电话）');
     await gotoView(cdp, 'students', /学生名单/);
     await cdp.waitFor(sel('#view [data-row]'), 20000, '学生列表渲染');
-    eq('学生列表行数', await cdp.eval('document.querySelectorAll("#view [data-row]").length'), 5);
+    eq('学生列表行数（与接口返回的学生总数一致）',
+      await cdp.eval('document.querySelectorAll("#view [data-row]").length'), BLINE.studentCount);
 
     const stuInfo = await cdp.eval(`(function(){
       var r = document.querySelector('#view [data-row]');
@@ -634,7 +680,8 @@ async function fetchJson(url, tries = 60) {
     await cdp.waitFor(sel('#view [data-act="new"]'), 15000, '督促页工具条');
     await cdp.eval('document.querySelector(\'#view [data-act="new"]\').click()');
     await cdp.waitFor('.ui-modal #ugStudents', 15000, '督促弹层');
-    eq('督促弹层内学生可选数', await cdp.eval('document.querySelectorAll(".ui-modal [data-ug-pick]").length'), 5);
+    eq('督促弹层内学生可选数（与接口返回的学生总数一致）',
+      await cdp.eval('document.querySelectorAll(".ui-modal [data-ug-pick]").length'), BLINE.studentCount);
 
     /* 选择章节 */
     await cdp.eval(LAST_M_CLICK('[data-act="pick-unit"]'));

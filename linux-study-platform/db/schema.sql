@@ -37,26 +37,37 @@ CREATE TABLE IF NOT EXISTS `admins` (
   UNIQUE KEY `uk_admin_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员账号';
 
--- 学生名单
+-- 学生名单（同时是学习平台的登录用户）
 CREATE TABLE IF NOT EXISTS `students` (
   `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `username`      VARCHAR(64)  NOT NULL COMMENT '登录账号',
-  `password_hash` VARCHAR(255) NOT NULL,
-  `name`          VARCHAR(64)  NOT NULL COMMENT '姓名',
+  `username`      VARCHAR(64)  NOT NULL COMMENT '登录账号（用户名）',
+  `password_hash` VARCHAR(255) NOT NULL COMMENT 'scrypt$N$r$p$salt$hash',
+  `name`          VARCHAR(64)  NOT NULL COMMENT '姓名 / 昵称',
   `sno`           VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '学号',
   `class_name`    VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '班级',
-  `phone`         VARCHAR(32)  NOT NULL DEFAULT '' COMMENT '联系电话',
+  -- 手机号是账号唯一性约束：允许 NULL（历史数据/管理员代建账号），
+  -- MySQL 的 UNIQUE 索引允许多行 NULL，因此不能改用 NOT NULL DEFAULT ''
+  `phone`         VARCHAR(32)  NULL DEFAULT NULL COMMENT '手机号（账号唯一性约束）',
   `email`         VARCHAR(128) NOT NULL DEFAULT '',
   `remark`        VARCHAR(255) NOT NULL DEFAULT '' COMMENT '备注',
-  `status`        TINYINT      NOT NULL DEFAULT 1 COMMENT '1在读 0停用',
+  `status`        TINYINT      NOT NULL DEFAULT 1 COMMENT '1允许使用 0已禁用',
+  -- ── 会员体系 ──
+  `member_type`   VARCHAR(16)  NOT NULL DEFAULT 'none'
+                  COMMENT 'none普通会员 week周 month月 year年 forever永久',
+  `member_expire_at` DATETIME  NULL
+                  COMMENT '会员到期时刻；永久会员为 NULL，普通会员为 NULL',
+  `member_started_at` DATETIME NULL COMMENT '最近一次开通/续费的时刻（到期时间起算基准）',
   `last_login_at` DATETIME     NULL,
-  `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
   `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_student_username` (`username`),
+  UNIQUE KEY `uk_student_phone` (`phone`),
   KEY `idx_student_class` (`class_name`),
-  KEY `idx_student_sno` (`sno`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学生名单';
+  KEY `idx_student_sno` (`sno`),
+  KEY `idx_student_member` (`member_type`, `member_expire_at`),
+  KEY `idx_student_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学生名单（学习平台用户）';
 
 -- 登录令牌（简单 Bearer Token，避免依赖 Redis / JWT 密钥管理）
 CREATE TABLE IF NOT EXISTS `tokens` (
@@ -88,6 +99,8 @@ CREATE TABLE IF NOT EXISTS `units` (
   `difficulty`   TINYINT      NOT NULL DEFAULT 1 COMMENT '1入门 2基础 3进阶 4高级',
   `sort_order`   INT          NOT NULL DEFAULT 0 COMMENT '同级排序',
   `is_checkable` TINYINT      NOT NULL DEFAULT 1 COMMENT '是否可打卡（目录级通常为 0）',
+  `is_free`      TINYINT      NOT NULL DEFAULT 0
+                 COMMENT '是否对普通会员免费开放：1免费 0需超级会员（仅 level<=2 的章节节点有意义，子级继承父级）',
   `status`       TINYINT      NOT NULL DEFAULT 1 COMMENT '1正常 0隐藏',
   `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -222,5 +235,91 @@ CREATE TABLE IF NOT EXISTS `activity` (
   KEY `idx_act_created` (`created_at`),
   KEY `idx_act_actor` (`actor_type`, `actor_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作动态流水';
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- 7. 会员体系 / 注册验证
+--    会员类型：none 普通会员（0 元）｜week 周｜month 月｜year 年｜forever 永久
+--    到期规则：以「设置时刻」为起算基准，续费叠加 = max(当前时刻, 原到期时刻) + 时长
+-- ─────────────────────────────────────────────────────────────────────────
+
+-- 会员定价（后台可改）
+CREATE TABLE IF NOT EXISTS `pricing` (
+  `code`       VARCHAR(16)  NOT NULL COMMENT 'none/week/month/year/forever',
+  `label`      VARCHAR(32)  NOT NULL COMMENT '周会员 / 月会员 / 年会员 / 永久会员',
+  `price`      DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '价格（元）',
+  `days`       INT          NOT NULL DEFAULT 0 COMMENT '有效天数；0 表示永久（不设到期时间）',
+  `perks`      VARCHAR(500) NOT NULL DEFAULT '' COMMENT '功能权益说明（｜分隔）',
+  `tagline`    VARCHAR(120) NOT NULL DEFAULT '' COMMENT '副标题',
+  `is_hot`     TINYINT      NOT NULL DEFAULT 0 COMMENT '是否推荐档位',
+  `enabled`    TINYINT      NOT NULL DEFAULT 1 COMMENT '1上架 0下架',
+  `sort_order` INT          NOT NULL DEFAULT 0,
+  `updated_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='会员定价';
+
+-- 短信验证码（注册 / 忘记密码）
+CREATE TABLE IF NOT EXISTS `sms_codes` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `phone`      VARCHAR(32)  NOT NULL,
+  `code`       VARCHAR(8)   NOT NULL COMMENT '6 位数字',
+  `scene`      VARCHAR(16)  NOT NULL DEFAULT 'register' COMMENT 'register|forgot',
+  `expire_at`  DATETIME     NOT NULL COMMENT '有效期（默认 5 分钟）',
+  `used_at`    DATETIME     NULL COMMENT '核销时间，非空表示已使用',
+  `send_count` INT          NOT NULL DEFAULT 1 COMMENT '同码重发次数',
+  `request_ip` VARCHAR(64)  NOT NULL DEFAULT '',
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_sms_phone` (`phone`, `scene`, `created_at`),
+  KEY `idx_sms_expire` (`expire_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='短信验证码';
+
+-- 图形验证码（服务端生成 SVG，答案只存服务端）
+CREATE TABLE IF NOT EXISTS `captcha_codes` (
+  `token`      CHAR(32)     NOT NULL COMMENT '一次性票据，前端回传',
+  `answer`     VARCHAR(16)  NOT NULL COMMENT '正确答案（小写）',
+  `expire_at`  DATETIME     NOT NULL COMMENT '有效期（默认 5 分钟）',
+  `used_at`    DATETIME     NULL,
+  `request_ip` VARCHAR(64)  NOT NULL DEFAULT '',
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`token`),
+  KEY `idx_captcha_expire` (`expire_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='图形验证码';
+
+-- 会员变更流水（开通 / 续费 / 到期降级 / 禁用启用）
+CREATE TABLE IF NOT EXISTS `member_logs` (
+  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `student_id`   INT UNSIGNED NOT NULL,
+  `action`       VARCHAR(16)  NOT NULL
+                 COMMENT 'grant开通 renew续费 expire到期降级 disable禁用 enable启用 admin_only',
+  `type_from`    VARCHAR(16)  NOT NULL DEFAULT '' COMMENT '变更前会员类型',
+  `type_to`      VARCHAR(16)  NOT NULL DEFAULT '',
+  `expire_from`  DATETIME     NULL COMMENT '变更前到期时刻',
+  `expire_to`    DATETIME     NULL COMMENT '变更后到期时刻（NULL = 永久）',
+  `days_added`   INT          NOT NULL DEFAULT 0 COMMENT '本次新增天数',
+  `operator_type` ENUM('admin','system') NOT NULL DEFAULT 'admin',
+  `operator_id`  INT UNSIGNED NULL COMMENT '管理员 id',
+  `operator_name` VARCHAR(64) NOT NULL DEFAULT '',
+  `remark`       VARCHAR(255) NOT NULL DEFAULT '',
+  `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_mlog_student` (`student_id`, `created_at`),
+  KEY `idx_mlog_created` (`created_at`),
+  CONSTRAINT `fk_mlog_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='会员变更流水';
+
+-- 打卡记录导出流水
+CREATE TABLE IF NOT EXISTS `export_logs` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `student_id` INT UNSIGNED NOT NULL,
+  `format`     VARCHAR(8)   NOT NULL COMMENT 'csv|xlsx|pdf',
+  `rows`       INT          NOT NULL DEFAULT 0,
+  `date_from`  DATE         NULL,
+  `date_to`    DATE         NULL,
+  `request_ip` VARCHAR(64)  NOT NULL DEFAULT '',
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_exp_student` (`student_id`, `created_at`),
+  CONSTRAINT `fk_exp_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='打卡记录导出流水';
 
 SET FOREIGN_KEY_CHECKS = 1;

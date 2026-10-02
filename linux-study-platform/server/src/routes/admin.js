@@ -6,8 +6,9 @@
 const express = require('express');
 const db = require('../db');
 const auth = require('../auth');
+const M = require('../member');
 const {
-  ah, bad, notFound, logActivity, unitPath, unitPaths, descendantIds, clampInt, percent, str,
+  ah, ApiError, bad, notFound, logActivity, unitPath, unitPaths, descendantIds, clampInt, percent, str,
 } = require('../util');
 
 const router = express.Router();
@@ -151,6 +152,7 @@ router.get('/students', ah(async (_req, res) => {
       status: Number(s.status), lastLoginAt: s.last_login_at,
       createdAt: s.created_at, done: Number(s.done_cnt || 0),
       percent: percent(s.done_cnt, totalUnits),
+      member: memberRow(s),
     })),
   });
 }));
@@ -195,7 +197,25 @@ router.put('/students/:id', ah(async (req, res) => {
   }
   sql += ' WHERE id = ?';
   params.push(id);
-  await db.run(sql, params);
+  try {
+    await db.run(sql, params);
+  } catch (e) {
+    if (e && e.code === 'ER_DUP_ENTRY') {
+      throw new ApiError(409, 'PHONE_TAKEN', '该手机号已绑定账号，请直接登录！');
+    }
+    throw e;
+  }
+  // 状态变更：禁用时立即踢下线，并写入会员流水
+  if (Number(s.status) !== Number(fields.status)) {
+    if (!fields.status) {
+      await db.run("DELETE FROM tokens WHERE owner_type = 'student' AND owner_id = ?", [id]);
+    }
+    await M.logMember(id, {
+      action: fields.status ? 'enable' : 'disable',
+      operatorType: 'admin', operatorId: req.session.id, operatorName: req.session.name,
+      remark: fields.status ? '恢复使用' : '禁止使用（已强制退出）',
+    });
+  }
   await logActivity('admin', req.session.id, req.session.name, 'student_update', s.username,
     `修改学生资料 ${fields.name}`);
   res.json({ ok: true });
@@ -240,6 +260,7 @@ router.get('/students/:id/detail', ah(async (req, res) => {
       id: Number(s.id), username: s.username, name: s.name, sno: s.sno,
       className: s.class_name, phone: s.phone, email: s.email, remark: s.remark,
       status: Number(s.status), lastLoginAt: s.last_login_at, createdAt: s.created_at,
+      member: memberRow(s),
     },
     checkins: checkins.map((c) => ({
       unitId: Number(c.unit_id), title: c.title, path: paths.get(Number(c.unit_id)) || c.title,
@@ -256,6 +277,227 @@ router.get('/students/:id/detail', ah(async (req, res) => {
     urges: urges.map((u) => ({
       targetId: Number(u.id), title: u.title, deadline: u.deadline,
       priority: u.priority, read: !!u.read_at, done: !!u.done_at,
+    })),
+  });
+}));
+
+/* ═══════════════════ 2.5 会员管理 ═══════════════════ */
+
+/** 会员类型下拉选项（给后台表单用） */
+const MEMBER_OPTIONS = [
+  { code: 'none', label: '普通会员', days: 0 },
+  { code: 'week', label: '周会员', days: 7 },
+  { code: 'month', label: '月会员', days: 30 },
+  { code: 'year', label: '年会员', days: 365 },
+  { code: 'forever', label: '永久会员', days: 0, permanent: true },
+];
+
+function memberRow(s) {
+  const eff = M.effectiveMember(s);
+  const v = M.memberView(eff);
+  return {
+    id: Number(s.id), username: s.username, name: s.name, sno: s.sno,
+    className: s.class_name, phone: s.phone,
+    status: Number(s.status), disabled: !s.status,
+    rawType: s.member_type,
+    type: v.type, typeLabel: v.label, levelLabel: v.levelLabel,
+    isSuper: v.isSuper, permanent: v.permanent, expired: v.expired,
+    expireAt: v.expireAt, remainMs: v.remainMs, remainDays: v.remainDays,
+    almostDue: v.almostDue, dueWarning: v.dueWarning,
+    startedAt: M.fmt(s.member_started_at),
+    needDowngrade: eff.expired,
+  };
+}
+
+/** GET /api/admin/members?keyword=&memberType=&status= —— 会员总览 */
+router.get('/members', ah(async (req, res) => {
+  const kw = str(req.query.keyword, 64).trim();
+  const mt = str(req.query.memberType, 16).trim();
+  const st = str(req.query.status, 4).trim();
+
+  const where = [];
+  const args = [];
+  if (kw) {
+    where.push('(s.username LIKE ? OR s.name LIKE ? OR s.phone LIKE ? OR s.sno LIKE ?)');
+    const like = '%' + kw + '%';
+    args.push(like, like, like, like);
+  }
+  if (['none', 'week', 'month', 'year', 'forever'].indexOf(mt) >= 0) {
+    where.push('s.member_type = ?');
+    args.push(mt);
+  }
+  if (st === '1' || st === '0') {
+    where.push('s.status = ?');
+    args.push(Number(st));
+  }
+
+  const rows = await db.q(
+    'SELECT s.id, s.username, s.name, s.sno, s.class_name, s.phone, s.status,' +
+    ' s.member_type, s.member_expire_at, s.member_started_at, s.last_login_at, s.created_at' +
+    ' FROM students s' +
+    (where.length ? ' WHERE ' + where.join(' AND ') : '') +
+    ' ORDER BY FIELD(s.member_type, \'forever\',\'year\',\'month\',\'week\',\'none\'), s.id',
+    args
+  );
+
+  const list = rows.map((s) => Object.assign(memberRow(s), {
+    lastLoginAt: s.last_login_at, createdAt: s.created_at,
+  }));
+
+  // 汇总（用惰性判定后的真实会员态统计，避免过期未降级造成虚高）
+  const summary = {
+    total: list.length,
+    superCount: list.filter((x) => x.isSuper).length,
+    normalCount: list.filter((x) => !x.isSuper).length,
+    disabledCount: list.filter((x) => x.disabled).length,
+    almostDueCount: list.filter((x) => x.almostDue).length,
+    byType: { none: 0, week: 0, month: 0, year: 0, forever: 0 },
+  };
+  list.forEach((x) => { summary.byType[x.type] = (summary.byType[x.type] || 0) + 1; });
+
+  // 顺手把已过期的落库（管理员打开页面即可看到准确状态），
+  // 同时清除登录令牌 —— 实现「到期后无论是否在线都强制退出」
+  const stale = list.filter((x) => x.needDowngrade).map((x) => x.id);
+  if (stale.length) {
+    for (const id of stale) {
+      await db.run("UPDATE students SET member_type='none', member_expire_at=NULL WHERE id=? AND member_type<>'none'", [id]);
+      await db.run("DELETE FROM tokens WHERE owner_type = 'student' AND owner_id = ?", [id]);
+      await M.logMember(id, {
+        action: 'expire', typeFrom: 'auto', typeTo: 'none',
+        operatorType: 'system', remark: '会员到期自动降级为普通会员（已强制退出登录）',
+      });
+    }
+  }
+
+  res.json({
+    items: list, summary,
+    options: MEMBER_OPTIONS,
+    freeChapter: await db.one(
+      "SELECT id, title FROM units WHERE is_free = 1 AND level = 2 ORDER BY sort_order, id LIMIT 1"
+    ) || null,
+  });
+}));
+
+/**
+ * POST /api/admin/members/:id/grant  { memberType, remark }
+ * 开通 / 续费 / 改档：不受频率限制，3 秒内连续设置也会正确叠加。
+ */
+router.post('/members/:id/grant', ah(async (req, res) => {
+  const id = clampInt(req.params.id, 1, 1e9, 0);
+  const memberType = str(req.body.memberType, 16).trim();
+  if (['none', 'week', 'month', 'year', 'forever'].indexOf(memberType) < 0) {
+    throw bad('会员类型不合法（none / week / month / year / forever）');
+  }
+  const r = await M.grantMember({
+    studentId: id,
+    memberType,
+    operatorId: req.session.id,
+    operatorName: req.session.name,
+    remark: str(req.body.remark, 255),
+  });
+  await logActivity('admin', req.session.id, req.session.name, 'member_grant',
+    r.student.username,
+    '设置 ' + (M.MEMBER_CN[memberType] || memberType) +
+    '，到期 ' + (r.after.expireAt || '永久') +
+    (r.stacked ? '（叠加续费 +' + r.daysAdded + ' 天）' : ''));
+  res.json({ ok: true, ...r, member: r.after });
+}));
+
+/**
+ * POST /api/admin/members/:id/status  { status: 1|0 }
+ * 禁用后：用户所有功能不可用，并立即踢下线
+ */
+router.post('/members/:id/status', ah(async (req, res) => {
+  const id = clampInt(req.params.id, 1, 1e9, 0);
+  const s = await db.one('SELECT id, username, name FROM students WHERE id = ?', [id]);
+  if (!s) throw notFound('用户不存在');
+  const st = Number(req.body.status) ? 1 : 0;
+  await M.setStatus(id, st, { operatorId: req.session.id, operatorName: req.session.name });
+  await logActivity('admin', req.session.id, req.session.name,
+    st ? 'member_enable' : 'member_disable', s.username,
+    st ? '允许使用' : '禁止使用（已强制退出）');
+  res.json({ ok: true, id, username: s.username, status: st });
+}));
+
+/** GET /api/admin/members/:id/logs —— 某用户的会员变更流水 */
+router.get('/members/:id/logs', ah(async (req, res) => {
+  const id = clampInt(req.params.id, 1, 1e9, 0);
+  const rows = await db.q(
+    'SELECT action, type_from, type_to, expire_from, expire_to, days_added,' +
+    ' operator_type, operator_name, remark, created_at' +
+    ' FROM member_logs WHERE student_id = ? ORDER BY id DESC LIMIT 100',
+    [id]
+  );
+  const ACT = {
+    grant: '开通会员', renew: '续费叠加', expire: '到期降级',
+    disable: '禁止使用', enable: '恢复使用',
+  };
+  res.json({
+    items: rows.map((r) => ({
+      action: r.action, actionText: ACT[r.action] || r.action,
+      typeFrom: M.MEMBER_CN[r.type_from] || r.type_from || '-',
+      typeTo: M.MEMBER_CN[r.type_to] || r.type_to || '-',
+      expireFrom: M.fmt(r.expire_from), expireTo: M.fmt(r.expire_to),
+      daysAdded: Number(r.days_added || 0),
+      operator: r.operator_type === 'system' ? '系统' : (r.operator_name || '管理员'),
+      remark: r.remark, createdAt: r.created_at,
+    })),
+  });
+}));
+
+/** GET /api/admin/pricing —— 定价档位配置 */
+router.get('/pricing', ah(async (_req, res) => {
+  const rows = await db.q('SELECT * FROM pricing ORDER BY sort_order, price');
+  res.json({
+    items: rows.map((p) => ({
+      code: p.code, label: p.label, price: Number(p.price), days: Number(p.days),
+      perks: String(p.perks || '').split('｜').filter(Boolean),
+      tagline: p.tagline, hot: !!p.is_hot,
+      enabled: !!p.enabled, sortOrder: Number(p.sort_order),
+    })),
+  });
+}));
+
+/** PUT /api/admin/pricing/:code —— 修改价格 / 权益文案 / 是否上架 */
+router.put('/pricing/:code', ah(async (req, res) => {
+  const code = str(req.params.code, 16).trim();
+  const p = await db.one('SELECT * FROM pricing WHERE code = ?', [code]);
+  if (!p) throw notFound('定价档位不存在');
+  const fields = {
+    label: str(req.body.label ?? p.label, 32),
+    price: req.body.price == null ? p.price : Number(req.body.price),
+    perks: req.body.perks == null
+      ? p.perks
+      : (Array.isArray(req.body.perks) ? req.body.perks.join('｜') : str(req.body.perks, 500)),
+    tagline: str(req.body.tagline ?? p.tagline, 64),
+    hot: req.body.hot == null ? p.is_hot : (req.body.hot ? 1 : 0),
+    enabled: req.body.enabled == null ? p.enabled : (req.body.enabled ? 1 : 0),
+    sort_order: req.body.sortOrder == null ? p.sort_order : clampInt(req.body.sortOrder, 0, 999, p.sort_order),
+  };
+  if (!Number.isFinite(fields.price) || fields.price < 0) throw bad('价格必须为不小于 0 的数字');
+  await db.run(
+    'UPDATE pricing SET label=?, price=?, perks=?, tagline=?, is_hot=?, enabled=?, sort_order=? WHERE code=?',
+    [fields.label, fields.price, fields.perks, fields.tagline, fields.hot, fields.enabled, fields.sort_order, code]
+  );
+  await logActivity('admin', req.session.id, req.session.name, 'pricing_update', code,
+    `${fields.label} ¥${fields.price}`);
+  res.json({ ok: true });
+}));
+
+/** GET /api/admin/export-logs —— 导出流水（谁在什么时候导出了多少条） */
+router.get('/export-logs', ah(async (req, res) => {
+  const limit = clampInt(req.query.limit, 1, 500, 100);
+  const rows = await db.q(
+    'SELECT e.id, e.format, e.`rows`, e.date_from, e.date_to, e.request_ip, e.created_at,' +
+    ' s.username, s.name' +
+    ' FROM export_logs e JOIN students s ON s.id = e.student_id' +
+    ' ORDER BY e.id DESC LIMIT ' + limit
+  );
+  res.json({
+    items: rows.map((r) => ({
+      id: Number(r.id), format: r.format, rows: Number(r.rows),
+      dateFrom: r.date_from, dateTo: r.date_to, ip: r.request_ip,
+      username: r.username, name: r.name, createdAt: r.created_at,
     })),
   });
 }));

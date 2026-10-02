@@ -152,27 +152,64 @@
 
   /* ───────── 认证 ───────── */
   API.auth = {
-    login: function (username, password, role) {
-      return request('POST', '/auth/login', { body: { username: username, password: password, role: role }, auth: false });
+    /**
+     * platform: 'checkin' → 打卡平台（普通会员会被 403 NEED_MEMBER 拦截）
+     *           'learn'   → 学习平台（默认）
+     */
+    login: function (username, password, role, platform) {
+      return request('POST', '/auth/login', {
+        body: {
+          username: username, password: password, role: role,
+          platform: platform || 'learn',
+        },
+        auth: false,
+      });
     },
     logout: function () { return request('POST', '/auth/logout', { body: {} }); },
     me: function () { return request('GET', '/auth/me'); },
     password: function (oldPassword, newPassword) {
       return request('POST', '/auth/password', { body: { oldPassword: oldPassword, newPassword: newPassword } });
     },
+
+    /* ── 注册 / 忘记密码 / 验证码 ── */
+    captcha: function () { return request('POST', '/auth/captcha', { body: {}, auth: false }); },
+    sms: function (phone, scene, captchaToken, captcha) {
+      return request('POST', '/auth/sms', {
+        body: { phone: phone, scene: scene || 'register', captchaToken: captchaToken, captcha: captcha },
+        auth: false,
+      });
+    },
+    register: function (data) {
+      return request('POST', '/auth/register', { body: data, auth: false });
+    },
+    forgot: function (data) {
+      return request('POST', '/auth/forgot', { body: data, auth: false });
+    },
+  };
+
+  /* ───────── 会员 ───────── */
+  API.member = {
+    /** 会员定价表（公开） */
+    pricing: function () { return request('GET', '/member/pricing', { auth: false }); },
+    /** 我的会员详情（类型 / 到期 / 剩余毫秒 / 是否不足 3 天） */
+    me: function () { return request('GET', '/member/me'); },
+    /** 打卡平台门禁：403 NEED_MEMBER / ACCOUNT_DISABLED */
+    gate: function () { return request('GET', '/member/gate'); },
+    /** 我的会员变更流水 */
+    logs: function () { return request('GET', '/member/logs'); },
   };
 
   /* ───────── 学生端 ───────── */
   API.student = {
-    /** 目录树 + 我的进度（含子孙累计） */
+    /** 目录树 + 我的进度（含子孙累计、locked / isFree 门禁标记） */
     tree: function () { return request('GET', '/tree', { query: { withProgress: 1 } }); },
     /** 单元详情（自身 + 子节点 + 我的打卡状态） */
     unit: function (id) { return request('GET', '/units/' + encodeURIComponent(id)); },
-    /** 批量打卡 */
+    /** 批量打卡（超级会员） */
     checkin: function (unitIds, date) {
       return request('POST', '/checkins', { body: { unitIds: unitIds, date: date } });
     },
-    /** 撤销打卡（后台会看到「已撤销打卡」流水） */
+    /** 撤销打卡（超级会员） */
     revoke: function (unitIds) {
       return request('POST', '/checkins/revoke', { body: { unitIds: unitIds } });
     },
@@ -184,6 +221,36 @@
     exercises: function (unitId) { return request('GET', '/my/exercises', { query: { unitId: unitId } }); },
     submitAnswer: function (questionId, answer) {
       return request('POST', '/my/exercises/submit', { body: { questionId: questionId, answer: answer } });
+    },
+
+    /** 导出打卡记录（csv / xlsx / pdf）→ 由服务端生成，浏览器直接下载 */
+    export: function (format, params) {
+      var q = ['format=' + encodeURIComponent(format)];
+      if (params && params.from) q.push('from=' + encodeURIComponent(params.from));
+      if (params && params.to) q.push('to=' + encodeURIComponent(params.to));
+      var url = CFG.api('/my/export') + '?' + q.join('&');
+      var tk = getToken();
+      var name = '打卡记录.' + (format === 'xlsx' ? 'xlsx' : format);
+      return fetch(url, {
+        method: 'GET',
+        headers: tk ? { Authorization: 'Bearer ' + tk, 'X-Token': tk } : {},
+        mode: 'cors',
+        credentials: 'omit',
+        cache: 'no-store',
+      }).then(function (res) {
+        if (!res.ok) {
+          return res.json().catch(function () { return {}; }).then(function (d) {
+            throw ApiError(res.status, (d && d.code) || 'HTTP_' + res.status,
+              (d && d.message) || defaultMsg(res.status), d);
+          });
+        }
+        var cd = res.headers.get('content-disposition') || '';
+        var m1 = /filename\*=UTF-8''([^;]+)/i.exec(cd);
+        var m2 = /filename="([^"]+)"/i.exec(cd);
+        if (m1) { try { name = decodeURIComponent(m1[1]); } catch (e) { /* 忽略 */ } }
+        else if (m2) name = m2[1];
+        return res.blob().then(function (blob) { return { blob: blob, name: name }; });
+      });
     },
   };
 
@@ -202,6 +269,21 @@
     studentUpdate: function (id, data) { return request('PUT', '/admin/students/' + id, { body: data }); },
     studentDelete: function (id) { return request('DELETE', '/admin/students/' + id); },
     studentDetail: function (id) { return request('GET', '/admin/students/' + id + '/detail'); },
+
+    /* 会员管理 */
+    members: function (params) { return request('GET', '/admin/members', { query: params || {} }); },
+    memberGrant: function (id, memberType, remark) {
+      return request('POST', '/admin/members/' + id + '/grant', { body: { memberType: memberType, remark: remark } });
+    },
+    memberStatus: function (id, status) {
+      return request('POST', '/admin/members/' + id + '/status', { body: { status: status } });
+    },
+    memberLogs: function (id) { return request('GET', '/admin/members/' + id + '/logs'); },
+    pricing: function () { return request('GET', '/admin/pricing'); },
+    pricingUpdate: function (code, data) {
+      return request('PUT', '/admin/pricing/' + encodeURIComponent(code), { body: data });
+    },
+    exportLogs: function (limit) { return request('GET', '/admin/export-logs', { query: { limit: limit || 100 } }); },
 
     /* 目录与内容 CRUD */
     units: function () { return request('GET', '/admin/units'); },

@@ -16,6 +16,7 @@
   var LoginView = w.LoginView;
   var SV = w.StudentView;
   var AV = w.AdminView;
+  var MG = w.MemberGate;
 
   var App = {};
 
@@ -41,6 +42,10 @@
         { key: 'dashboard', title: '数据面板', icon: '📊' },
         { key: 'students',  title: '学生名单', icon: '👥' },
         { key: 'logs',      title: '打卡流水', icon: '📋' },
+      ] },
+      { group: '会员', items: [
+        { key: 'members', title: '会员管理', icon: '👑' },
+        { key: 'pricing', title: '定价配置', icon: '💎' },
       ] },
       { group: '内容', items: [
         { key: 'units', title: '目录内容', icon: '📚' },
@@ -149,6 +154,16 @@
     renderChrome(user);
 
     var isAdmin = user.role === 'admin';
+
+    /* 会员门禁：学生端进入打卡平台前必须校验超级会员身份。
+       会话恢复（刷新页面）路径没有经过登录页，这里补一次检查；
+       若会员已到期 / 被禁用，会弹出不可取消的拦截弹窗并强制退出。 */
+    if (!isAdmin && MG) {
+      MG.bind();
+      MG.ensure();
+      MG.startPolling();
+    }
+
     App.go(isAdmin ? 'dashboard' : 'dashboard', { silent: true });
 
     UI.toast('数据已同步 · ' + (isAdmin ? '管理后台' : '学生端'),
@@ -181,6 +196,12 @@
 
     // 导航
     renderNav(isAdmin ? 'admin' : 'student');
+
+    // 会员徽标只对学生有意义，管理员隐藏，避免误显示「普通会员」
+    var mBadge = d.getElementById('userMember');
+    if (mBadge) mBadge.style.display = isAdmin ? 'none' : '';
+    var mLine = d.getElementById('userMemberLine');
+    if (mLine) mLine.style.display = isAdmin ? 'none' : '';
 
     // 状态灯文案
     UI.setBackend(STORE.state.backend === 'err' ? 'err' : 'ok');
@@ -277,6 +298,7 @@
     }).then(function (ok) {
       if (!ok) return;
       var done = function () {
+        if (MG) MG.stopPolling();
         STORE.clearSession();
         onNotLogged();
         if (LoginView) LoginView.show();
@@ -425,6 +447,12 @@
         pop.hidden = true;
         var act = b.dataset.act;
         if (act === 'logout') App.logout();
+        else if (act === 'pricing') { if (MG) MG.openPricing(); }
+        else if (act === 'member') { if (MG) MG.openMine(); }
+        else if (act === 'learn') {
+          /* 学习平台与打卡平台共用同一套账号与会员体系 */
+          w.open('/learn/', '_blank');
+        }
         else if (act === 'theme') {
           var t = STORE.toggleTheme();
           UI.toast(t === 'dark' ? '已切换到深蓝科技主题' : '已切换到浅色纸张主题', 'info', '主题已切换', 1800);

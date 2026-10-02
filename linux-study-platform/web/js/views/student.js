@@ -506,10 +506,41 @@
 
   /* ═══════════════════ 视图：我的打卡 ═══════════════════ */
 
+  /** 会员状态 + 三格式导出条（超级会员专属） */
+  function exportBar() {
+    var MG = w.MemberGate;
+    var m = (MG && MG.member) || { type: 'none', isSuper: false };
+    var superMode = !!m.isSuper;
+    if (!superMode) {
+      return '<div class="mem-strip">' +
+        '<span class="bi">🔒</span>' +
+        '<span>普通会员无法导出打卡记录。<b>超级会员</b>可导出 CSV / Excel / PDF 三种格式。</span>' +
+        '<span class="sp"></span>' +
+        '<button type="button" data-mem="pricing">💎 查看会员定价</button>' +
+      '</div>';
+    }
+    return '<div class="mem-strip" style="border-color:var(--accent)">' +
+      '<span class="bi">📤</span>' +
+      '<span>导出打卡记录：' +
+        '<b>' + U.esc(MG.LEVEL_CN[m.type] || '超级会员') + '</b>' +
+        (m.permanent ? '（永久有效）' : '　到期 <b>' + U.esc(m.expireAt || '') + '</b>') +
+      '</span>' +
+      '<span class="sp"></span>' +
+      '<label class="dim xsmall" style="display:flex;align-items:center;gap:6px">' +
+        '起 <input class="input" type="date" id="expFrom" style="width:auto;padding:5px 8px">' +
+        '止 <input class="input" type="date" id="expTo" style="width:auto;padding:5px 8px">' +
+      '</label>' +
+      '<button type="button" data-export="csv">📄 导出 CSV</button>' +
+      '<button type="button" data-export="xlsx">📊 导出 Excel</button>' +
+      '<button type="button" data-export="pdf">📕 导出 PDF</button>' +
+    '</div>';
+  }
+
   V.records = {
     title: '我的打卡',
     icon: '✅',
     nav: true,
+    exportBar: exportBar,
     render: function (host) {
       host.innerHTML = U.loading('正在加载打卡记录…');
 
@@ -531,6 +562,8 @@
             '<button class="btn" data-go="catalog" type="button">📚 去补打卡</button>' +
           '</div>' +
         '</div>';
+
+        html += exportBar();
 
         if (!items.length) {
           host.innerHTML = html + '<div class="panel"><div class="panel-body">' +
@@ -902,6 +935,21 @@
 
       var t = e.target;
       var closest = function (sel) { return t.closest && t.closest(sel); };
+
+      // 打卡记录导出（超级会员专属：服务端生成 CSV / XLSX / PDF）
+      var expBtn = closest('[data-export]');
+      if (expBtn) {
+        var MG = w.MemberGate;
+        if (MG) {
+          var fromEl = d.getElementById('expFrom');
+          var toEl = d.getElementById('expTo');
+          MG.exportRecords(expBtn.dataset.export, {
+            from: fromEl && fromEl.value,
+            to: toEl && toEl.value,
+          });
+        }
+        return;
+      }
 
       // 侧栏导航在 app.js 中处理；这里只处理视图内按钮
       // 顺序很重要：「查看内容」按钮位于 .tree-head 内部，必须先于 data-toggle 判定，

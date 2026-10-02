@@ -40,13 +40,40 @@ GROUP_OF = {t["key"]: t["group"] for t in _d["tutorials"]}
 
 # ── 账号 ───────────────────────────────────────────────────────────────────
 ADMIN = [("admin", "admin@2026", "管理员（教师）", "super")]
+
+# username, password, name, sno, class, phone, member_type, expire_sql, status
+# expire_sql 为 SQL 表达式：NULL 表示无到期时间；否则用 DATE_ADD(NOW(), ...)
+# 这 5 个演示账号刻意覆盖「全部会员状态」，便于逐个验证门禁表现：
+#   student1 永久会员    → 全部功能可用
+#   student2 年会员      → 常规超级会员
+#   student3 普通会员    → 学习平台锁章演示 / 无法进入打卡平台
+#   student4 周会员(剩2天) → 触发「不足 3 天续费提醒」与右下角倒计时
+#   student5 普通会员+禁用 → 触发「账号已被管理员设置为禁用」提示
 STUDENTS = [
-    # username, password,     name,       sno,       class,        phone
-    ("student1", "xiaoran2026", "学生一", "2026001", "计算机应用 1 班", "13800000001"),
-    ("student2", "linux2026",   "学生二", "2026002", "计算机应用 1 班", "13800000002"),
-    ("student3", "study2026",   "学生三", "2026003", "计算机应用 1 班", "13800000003"),
-    ("student4", "buddy2026",   "学生四", "2026004", "计算机应用 2 班", "13800000004"),
-    ("student5", "hello2026",   "学生五", "2026005", "计算机应用 2 班", "13800000005"),
+    ("student1", "xiaoran2026", "学生一", "2026001", "计算机应用 1 班", "13800000001",
+     "forever", None, 1),
+    ("student2", "linux2026", "学生二", "2026002", "计算机应用 1 班", "13800000002",
+     "year", "DATE_ADD(NOW(), INTERVAL 365 DAY)", 1),
+    ("student3", "study2026", "学生三", "2026003", "计算机应用 1 班", "13800000003",
+     "none", None, 1),
+    ("student4", "buddy2026", "学生四", "2026004", "计算机应用 2 班", "13800000004",
+     "week", "DATE_ADD(NOW(), INTERVAL 2 DAY) + INTERVAL 3 HOUR", 1),
+    ("student5", "hello2026", "学生五", "2026005", "计算机应用 2 班", "13800000005",
+     "none", None, 0),
+]
+
+# 会员定价（与 migrate_v2_member.sql 保持一致；后台可改）
+PRICING = [
+    ("none", "普通会员", "0.00", 0, "免费体验", 0,
+     "第一章学习权限｜不可打卡｜不可学习全部章节｜无法登录打卡平台"),
+    ("week", "周会员", "4.00", 7, "短期冲刺｜7 天", 0,
+     "可学习全章节内容｜可进行学习打卡｜专业团队出题练习｜可导出学习打卡记录"),
+    ("month", "月会员", "12.00", 30, "最受欢迎｜30 天", 1,
+     "可学习全章节内容｜可进行学习打卡｜专业团队出题练习｜可导出学习打卡记录"),
+    ("year", "年会员", "24.00", 365, "超高性价比｜365 天", 0,
+     "可学习全章节内容｜可进行学习打卡｜专业团队出题练习｜可导出学习打卡记录"),
+    ("forever", "永久会员", "59.90", 0, "一次购买｜终身可用", 0,
+     "可学习全章节内容｜可进行学习打卡｜专业团队出题练习｜可导出学习打卡记录"),
 ]
 
 SCRYPT_N, SCRYPT_R, SCRYPT_P, DKLEN = 16384, 8, 1, 64
@@ -91,21 +118,42 @@ for u, p, n, role in ADMIN:
             u=q(u), h=q(hash_pwd(p)), n=q(n), r=q(role)))
 
 acc.append("")
-acc.append("-- ── 学生名单（姓名 / 学号 / 班级 / 联系电话 均可在后台修改）──")
-for u, p, n, sno, cls, phone in STUDENTS:
+acc.append("-- ── 学生名单（姓名 / 学号 / 班级 / 手机号 均可在后台修改）──")
+acc.append("-- 会员类型：none 普通 week 周 month 月 year 年 forever 永久；member_expire_at 为 NULL 表示永久或未开通")
+for u, p, n, sno, cls, phone, mtype, mexp, st in STUDENTS:
+    exp_sql = mexp if mexp else "NULL"
+    started = "NOW()" if mtype != "none" else "NULL"
     acc.append(
-        "INSERT INTO `students` (`username`,`password_hash`,`name`,`sno`,`class_name`,`phone`) VALUES "
-        "({u}, {h}, {n}, {s}, {c}, {ph})\n"
+        "INSERT INTO `students` (`username`,`password_hash`,`name`,`sno`,`class_name`,`phone`,"
+        "`member_type`,`member_expire_at`,`member_started_at`,`status`) VALUES "
+        "({u}, {h}, {n}, {s}, {c}, {ph}, {mt}, {me}, {ms}, {st})\n"
         "  ON DUPLICATE KEY UPDATE `password_hash`=VALUES(`password_hash`),"
         "`name`=VALUES(`name`),`sno`=VALUES(`sno`),"
-        "`class_name`=VALUES(`class_name`),`phone`=VALUES(`phone`);".format(
-            u=q(u), h=q(hash_pwd(p)), n=q(n), s=q(sno), c=q(cls), ph=q(phone)))
+        "`class_name`=VALUES(`class_name`),`phone`=VALUES(`phone`),"
+        "`member_type`=VALUES(`member_type`),`member_expire_at`=VALUES(`member_expire_at`),"
+        "`member_started_at`=VALUES(`member_started_at`),`status`=VALUES(`status`);".format(
+            u=q(u), h=q(hash_pwd(p)), n=q(n), s=q(sno), c=q(cls), ph=q(phone),
+            mt=q(mtype), me=exp_sql, ms=started, st=st))
+
+acc.append("")
+acc.append("-- ── 会员定价（后台「会员管理 → 定价配置」可随时修改）──")
+acc.append("-- 字段：code, label, price, days(0=永久), tagline, is_hot, perks")
+for code, label, price, days, tagline, hot, perks in PRICING:
+    acc.append(
+        "INSERT INTO `pricing` (`code`,`label`,`price`,`days`,`tagline`,`is_hot`,`perks`,`sort_order`) VALUES "
+        "({c}, {l}, {pr}, {d}, {tg}, {h}, {pk}, {so})\n"
+        "  ON DUPLICATE KEY UPDATE `label`=VALUES(`label`),`price`=VALUES(`price`),"
+        "`days`=VALUES(`days`),`tagline`=VALUES(`tagline`),`is_hot`=VALUES(`is_hot`),"
+        "`perks`=VALUES(`perks`);".format(
+            c=q(code), l=q(label), pr=price, d=days, tg=q(tagline), h=hot,
+            pk=q(perks), so=(PRICING.index((code, label, price, days, tagline, hot, perks)) + 1) * 10))
 
 acc.append("")
 acc.append("-- ── 明文口令速查（首次登录后请在后台或数据库中修改）──")
 acc.append("--   admin    / admin@2026")
-for u, p, n, sno, cls, phone in STUDENTS:
-    acc.append("--   %-9s/ %s" % (u, p))
+for u, p, n, sno, cls, phone, mtype, mexp, st in STUDENTS:
+    acc.append("--   %-9s/ %-12s 会员=%s%s" % (
+        u, p, mtype, "（已禁用）" if st == 0 else ""))
 acc.append("")
 
 open(OUT_ACC, "w", encoding="utf-8").write("\n".join(acc))
@@ -126,16 +174,16 @@ class Builder:
         return "@u%d" % self.seq
 
     def add(self, parent_var, level, title, summary="", ctype="text", body=None,
-            lang="bash", example="", diff=1, sort=0, checkable=0):
+            lang="bash", example="", diff=1, sort=0, checkable=0, free=0):
         var = self.newvar()
         self.lines.append(
             "INSERT INTO `units` (`parent_id`,`level`,`title`,`summary`,`content_type`,`body`,"
-            "`lang`,`example`,`difficulty`,`sort_order`,`is_checkable`) VALUES "
-            "({p}, {lv}, {t}, {s}, {ct}, {b}, {lg}, {ex}, {df}, {so}, {ck});".format(
+            "`lang`,`example`,`difficulty`,`sort_order`,`is_checkable`,`is_free`) VALUES "
+            "({p}, {lv}, {t}, {s}, {ct}, {b}, {lg}, {ex}, {df}, {so}, {ck}, {fr});".format(
                 p=parent_var if parent_var else "NULL", lv=level, t=q(title),
                 s=q(summary or ""), ct=q(ctype),
                 b=q(body) if body is not None else "NULL",
-                lg=q(lang), ex=q(example or ""), df=diff, so=sort, ck=checkable))
+                lg=q(lang), ex=q(example or ""), df=diff, so=sort, ck=checkable, fr=free))
         self.lines.append("SET %s := LAST_INSERT_ID();" % var)
         return var
 
@@ -171,8 +219,10 @@ for gi, g in enumerate(groups):
     arr = by_group.get(gname, [])
     if not arr:
         continue
+    # 免费范围：仅「① 入门与安装」对普通会员开放，其余章节需超级会员
+    is_free = 1 if gname.startswith("①") else 0
     lv2 = b.add(lv1_tut, 2, gname, "本组共 %d 讲" % len(arr), "text", None, "bash", "",
-                TUT_DIFF.get(gname, 2), (gi + 1) * 10, 0)
+                TUT_DIFF.get(gname, 2), (gi + 1) * 10, 0, free=is_free)
     for ti, t in enumerate(arr):
         blocks = parsed["tutorials"].get(t["key"], [])
         lv3 = b.add(lv2, 3, t["name"], t.get("desc", ""), "text", None, "bash", "",

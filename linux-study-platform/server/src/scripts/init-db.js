@@ -26,7 +26,9 @@ const FORCE = process.argv.includes('--force');
 const DB_DIR = path.resolve(__dirname, '..', '..', '..', 'db');
 const FILES = [
   { file: 'schema.sql', label: '表结构' },
-  { file: 'seed_accounts.sql', label: '账号' },
+  // 幂等迁移：为「已存在但结构较旧」的库补齐会员字段与新表（全新库执行也无副作用）
+  { file: 'migrate_v2_member.sql', label: '会员体系迁移' },
+  { file: 'seed_accounts.sql', label: '账号与定价' },
 ].concat(SKIP_CONTENT ? [] : [{ file: 'seed_content.sql', label: '学习内容' }]);
 
 (async () => {
@@ -77,7 +79,6 @@ const FILES = [
     await conn.query(sql);
     console.log('完成');
   }
-
   /* 结果核对 */
   const dbname = process.env.DB_NAME || 'linux_study';
   await conn.query('USE `' + dbname + '`');
@@ -85,15 +86,24 @@ const FILES = [
     'SELECT (SELECT COUNT(*) FROM `admins`) AS admins,' +
     '       (SELECT COUNT(*) FROM `students`) AS students,' +
     '       (SELECT COUNT(*) FROM `units`) AS units,' +
-    '       (SELECT COUNT(*) FROM `units` u WHERE u.`level` = 3 AND u.`is_checkable` = 1 AND u.`status` = 1) AS checkable'
+    '       (SELECT COUNT(*) FROM `units` u WHERE u.`level` = 3 AND u.`is_checkable` = 1 AND u.`status` = 1) AS checkable,' +
+    '       (SELECT COUNT(*) FROM `units` u WHERE u.`level` = 2 AND u.`is_free` = 1) AS freechap,' +
+    '       (SELECT COUNT(*) FROM `pricing`) AS pricing'
   );
   const r = rows[0];
+  const [mdist] = await conn.query(
+    'SELECT `member_type`, COUNT(*) AS n FROM `students` GROUP BY `member_type` ORDER BY n DESC'
+  );
+  const TYPE_CN = { none: '普通', week: '周', month: '月', year: '年', forever: '永久' };
   console.log('');
   console.log('✔ 初始化完成（库：' + dbname + '）');
   console.log('  ├─ 管理员：' + r.admins + ' 个');
-  console.log('  ├─ 学生：' + r.students + ' 个');
+  console.log('  ├─ 用户：' + r.students + ' 个（' +
+    mdist.map(function (m) { return (TYPE_CN[m.member_type] || m.member_type) + ' ' + m.n; }).join(' / ') + '）');
   console.log('  ├─ 目录节点：' + r.units + ' 个');
-  console.log('  └─ 可打卡内容：' + r.checkable + ' 个');
+  console.log('  ├─ 可打卡内容：' + r.checkable + ' 个');
+  console.log('  ├─ 免费章节：' + r.freechap + ' 个（其余章节需超级会员）');
+  console.log('  └─ 会员定价档位：' + r.pricing + ' 个');
   if (SKIP_CONTENT) console.log('  ℹ 本次跳过了学习内容导入（--skip-content）');
   if (Number(r.units) === 0 && SKIP_CONTENT) {
     console.log('  ⚠ 目录为空：请去掉 --skip-content 再执行一次以导入学习内容');

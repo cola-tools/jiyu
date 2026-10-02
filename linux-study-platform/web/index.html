@@ -9,6 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 <link rel="stylesheet" href="css/theme.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/member.css">
 </head>
 <body>
 
@@ -70,17 +71,15 @@
       <div class="login-err" id="loginErr" hidden></div>
       <button class="btn btn-primary btn-lg btn-block" id="loginBtn" type="submit">进入学习</button>
     </form>
-
-    <div class="login-tip" id="loginTip">
-      <b>演示账号</b>
-      <div class="tip-grid">
-        <span>student1 ~ student5</span><span>密码见部署文档</span>
-      </div>
-    </div>
   </div>
 
   <div class="login-foot">
     <span>数据存储于 MySQL · 支持手机 / 平板 / Windows / macOS</span>
+    <div class="platform-switch">
+      <a href="/learn/">📖 前往学习平台（课程内容在这里学）</a>
+      <a href="/learn/#/records">📥 学习打卡记录与导出</a>
+    </div>
+    <span style="margin-top:8px;display:block">打卡平台仅向<b>超级会员</b>开放，普通会员请联系管理员开通</span>
   </div>
 </div>
 
@@ -109,10 +108,16 @@
           <span class="user-meta">
             <b id="userName">—</b>
             <i id="userSub">—</i>
+            <em class="member-badge" id="userMember">普通会员</em>
           </span>
           <span class="caret">▾</span>
         </button>
         <div class="usermenu-pop" id="userPop" hidden>
+          <div class="member-line" id="userMemberLine">会员：<b>普通会员</b></div>
+          <button type="button" data-act="pricing">💎 定价</button>
+          <button type="button" data-act="member">👑 我的会员</button>
+          <button type="button" data-act="learn">📖 学习平台</button>
+          <div class="sep"></div>
           <button type="button" data-act="profile">🙍 我的资料</button>
           <button type="button" data-act="password">🔑 修改密码</button>
           <button type="button" data-act="theme">🌗 切换浅色 / 深色</button>
@@ -164,11 +169,15 @@
 
 <div class="toasts" id="toasts"></div>
 
+<!-- ═══ 会员门禁层（定价 / 我的会员 / 到期强制退出 / 倒计时）挂载点 ═══ -->
+<div id="memberLayer"></div>
+
 <script src="js/config.js"></script>
 <script src="js/util.js"></script>
 <script src="js/api.js"></script>
 <script src="js/store.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/member.js"></script>
 <script src="js/views/login.js"></script>
 <script src="js/views/student.js"></script>
 <script src="js/views/admin.js"></script>

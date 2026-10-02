@@ -6,7 +6,9 @@
 const express = require('express');
 const db = require('../db');
 const auth = require('../auth');
-const { ah, bad, notFound, logActivity, unitPaths, clampInt, percent, str } = require('../util');
+const M = require('../member');
+const exporter = require('../exporter');
+const { ah, ApiError, bad, notFound, logActivity, unitPaths, clampInt, percent, str } = require('../util');
 
 const router = express.Router();
 
@@ -17,20 +19,79 @@ router.use((req, res, next) => {
   return auth.requireRole('student')(req, res, next);
 });
 
+/* ───────────────────────── 章节权限 ───────────────────────── */
+
+/**
+ * 计算整棵树的「免费分支」集合。
+ * 规则：节点自身或其任一祖先被标记 is_free=1，则该节点属于免费分支。
+ * 免费范围由后台在 units.is_free 上配置（默认仅「① 入门与安装」）。
+ * @returns {Set<number>} 免费分支内的节点 id
+ */
+function freeBranchIds(units) {
+  const byId = new Map(units.map((u) => [Number(u.id), u]));
+  const free = new Set();
+  const seen = new Set();
+
+  function walk(id) {
+    if (seen.has(id)) return free.has(id);
+    seen.add(id);
+    const u = byId.get(id);
+    if (!u) return false;
+    const selfFree = !!u.is_free;
+    const parentId = u.parent_id == null ? null : Number(u.parent_id);
+    const upFree = parentId ? walk(parentId) : false;
+    const ok = selfFree || upFree;
+    if (ok) free.add(id);
+    return ok;
+  }
+  units.forEach((u) => walk(Number(u.id)));
+  return free;
+}
+
+/**
+ * 判断单个节点是否被锁（未开通超级会员且不在免费分支内）
+ * 目录树最多 4 级，逐级上溯即可，避免依赖递归 CTE（MySQL 5.7 不支持）
+ */
+async function isUnitLocked(unitId, isSuper) {
+  if (isSuper) return false;
+  let cur = await db.one('SELECT id, parent_id, is_free FROM units WHERE id = ?', [unitId]);
+  let guard = 0;
+  while (cur && guard++ < 8) {
+    if (cur.is_free) return false;
+    if (cur.parent_id == null) break;
+    cur = await db.one('SELECT id, parent_id, is_free FROM units WHERE id = ?', [cur.parent_id]);
+  }
+  return true;
+}
+
+/** 被锁定时统一的响应体 */
+function lockedPayload() {
+  return {
+    error: 'LOCKED',
+    code: 'LOCKED',
+    message: auth.LOCKED_MSG,
+    needMember: true,
+  };
+}
+
 /* ───────────────────────── 目录树 ───────────────────────── */
 
 /**
  * GET /api/tree?withProgress=1&checkableOnly=0
  * 返回扁平目录树 + 每个节点的打卡统计（含子孙累计）
+ * 每个节点附带 locked / isFree：
+ *   普通会员仅能访问免费分支（默认「① 入门与安装」），其余节点 locked=true，前端渲染 🔒
  */
 router.get('/tree', ah(async (req, res) => {
   const sid = req.session.id;
+  const isSuper = !!req.session.isSuper;
   const units = await db.q(
     `SELECT id, parent_id, level, title, summary, content_type, difficulty,
-            is_checkable, sort_order, example
+            is_checkable, is_free, sort_order, example
        FROM units WHERE status = 1
       ORDER BY level, sort_order, id`
   );
+  const freeSet = freeBranchIds(units);
   const checkable = units.filter((u) => u.is_checkable);
   const ids = checkable.map((u) => u.id);
   const doneSet = new Set();
@@ -68,13 +129,18 @@ router.get('/tree', ah(async (req, res) => {
   units.forEach((u) => calc(Number(u.id)));
 
   res.json({
+    member: req.session.member,
+    isSuper,
     tree: units.map((u) => {
       const s = stat.get(Number(u.id)) || { total: 0, done: 0 };
+      const free = freeSet.has(Number(u.id));
       return {
         id: Number(u.id), parentId: u.parent_id == null ? null : Number(u.parent_id),
         level: u.level, title: u.title, summary: u.summary,
         contentType: u.content_type, difficulty: u.difficulty,
         checkable: !!u.is_checkable, example: u.example,
+        isFree: free,
+        locked: !isSuper && !free,
         done: doneSet.has(Number(u.id)),
         total: s.total, completed: s.done,
         percent: percent(s.done, s.total),
@@ -86,14 +152,28 @@ router.get('/tree', ah(async (req, res) => {
 
 /**
  * GET /api/units/:id  单元详情：自身 + 子节点 + 我的打卡
+ * 被锁定的章节返回 403 LOCKED，前端据此提示「还未开通超级会员」
  */
 router.get('/units/:id', ah(async (req, res) => {
   const id = clampInt(req.params.id, 1, 1e9, 0);
   const u = await db.one('SELECT * FROM units WHERE id = ?', [id]);
   if (!u) throw notFound('该学习内容不存在');
+
+  if (await isUnitLocked(id, !!req.session.isSuper)) {
+    return res.status(403).json(Object.assign(lockedPayload(), {
+      unit: { id: Number(u.id), title: u.title, level: u.level },
+    }));
+  }
+  // 父级被锁时，子节点内容同样不可见
+  if (Number(u.parent_id) && await isUnitLocked(Number(u.parent_id), !!req.session.isSuper)) {
+    return res.status(403).json(Object.assign(lockedPayload(), {
+      unit: { id: Number(u.id), title: u.title, level: u.level },
+    }));
+  }
+
   const children = await db.q(
     `SELECT id, parent_id, level, title, summary, content_type, body, lang, example,
-            difficulty, is_checkable, sort_order
+            difficulty, is_checkable, is_free, sort_order
        FROM units WHERE parent_id = ? AND status = 1 ORDER BY sort_order, id`,
     [id]
   );
@@ -103,17 +183,22 @@ router.get('/units/:id', ah(async (req, res) => {
     [req.session.id, id]
   );
   const paths = await unitPaths([id]);
+  const isSuper = !!req.session.isSuper;
   res.json({
     unit: {
       id: Number(u.id), parentId: u.parent_id == null ? null : Number(u.parent_id),
       level: u.level, title: u.title, summary: u.summary,
       contentType: u.content_type, body: u.body, lang: u.lang,
       difficulty: u.difficulty, checkable: !!u.is_checkable, example: u.example,
+      isFree: !!u.is_free, locked: false,
       path: paths.get(id) || u.title,
     },
     children: children.map((c) => ({
       id: Number(c.id), level: c.level, title: c.title, summary: c.summary,
-      contentType: c.content_type, body: c.body, lang: c.lang,
+      contentType: c.content_type, lang: c.lang,
+      // 锁定的子节点不下发正文，避免绕过前端限制
+      body: (!isSuper && !c.is_free) ? null : c.body,
+      locked: !isSuper && !c.is_free,
       difficulty: c.difficulty, checkable: !!c.is_checkable, example: c.example,
     })),
     checkin: ck && ck.status === 'done'
@@ -128,7 +213,7 @@ router.get('/units/:id', ah(async (req, res) => {
  * POST /api/checkins  { unitIds: [1,2], date: 'YYYY-MM-DD' }
  * 只有 is_checkable 的单元可以被打卡
  */
-router.post('/checkins', ah(async (req, res) => {
+router.post('/checkins', auth.requireSuper, ah(async (req, res) => {
   const sid = req.session.id;
   const ids = normalizeIds(req.body.unitIds);
   if (!ids.length) throw bad('请先勾选要打卡的内容');
@@ -173,7 +258,7 @@ router.post('/checkins', ah(async (req, res) => {
  * POST /api/checkins/revoke  { unitIds: [] }
  * 学生撤销自己的打卡 → 后台会看到「已撤销打卡」流水
  */
-router.post('/checkins/revoke', ah(async (req, res) => {
+router.post('/checkins/revoke', auth.requireSuper, ah(async (req, res) => {
   const sid = req.session.id;
   const ids = normalizeIds(req.body.unitIds);
   if (!ids.length) throw bad('请先勾选要撤销的内容');
@@ -204,7 +289,7 @@ router.post('/checkins/revoke', ah(async (req, res) => {
 }));
 
 /** GET /api/my/checkins?limit= */
-router.get('/my/checkins', ah(async (req, res) => {
+router.get('/my/checkins', auth.requireSuper, ah(async (req, res) => {
   const limit = clampInt(req.query.limit, 1, 2000, 500);
   const rows = await db.q(
     `SELECT c.unit_id, c.checkin_date, c.created_at, c.updated_at,
@@ -225,7 +310,7 @@ router.get('/my/checkins', ah(async (req, res) => {
 }));
 
 /** GET /api/my/stats */
-router.get('/my/stats', ah(async (req, res) => {
+router.get('/my/stats', auth.requireSuper, ah(async (req, res) => {
   const sid = req.session.id;
   const total = await db.scalar('SELECT COUNT(*) FROM units WHERE is_checkable = 1 AND status = 1');
   const done = await db.scalar(
@@ -258,6 +343,97 @@ router.get('/my/stats', ah(async (req, res) => {
       action: r.action, title: r.title, date: r.new_date || r.prev_date, at: r.created_at,
     })),
   });
+}));
+
+/* ───────────────────────── 导出打卡记录 ───────────────────────── */
+
+const EXPORT_DIFF_CN = ['', '入门', '基础', '进阶', '高级'];
+
+/** 导出可用的时间范围（含首尾） */
+function optDate(v) {
+  const s = String(v || '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+}
+
+/** 兼容中文文件名的 Content-Disposition（RFC 5987） */
+function contentDisposition(filename) {
+  const fallback = String(filename).replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '');
+  return 'attachment; filename="' + fallback + '"; filename*=UTF-8\'\'' +
+    encodeURIComponent(filename);
+}
+
+/**
+ * GET /api/my/export?format=csv|xlsx|pdf&from=YYYY-MM-DD&to=YYYY-MM-DD
+ * 仅超级会员可用（普通会员 → 403 NEED_MEMBER）
+ */
+router.get('/my/export', auth.requireSuper, ah(async (req, res) => {
+  const format = String(req.query.format || 'csv').toLowerCase().trim();
+  if (['csv', 'xlsx', 'pdf'].indexOf(format) < 0) {
+    throw bad('不支持的导出格式：' + format + '（可选 csv / xlsx / pdf）');
+  }
+  const from = optDate(req.query.from);
+  const to = optDate(req.query.to);
+  if (from && to && from > to) throw bad('开始日期不能晚于结束日期');
+
+  const where = ["c.student_id = ?", "c.status = 'done'"];
+  const args = [req.session.id];
+  if (from) { where.push('c.checkin_date >= ?'); args.push(from); }
+  if (to) { where.push('c.checkin_date <= ?'); args.push(to); }
+
+  const rows = await db.q(
+    `SELECT c.unit_id, c.checkin_date, c.status, c.updated_at,
+            u.title, u.difficulty
+       FROM checkins c JOIN units u ON u.id = c.unit_id
+      WHERE ${where.join(' AND ')}
+      ORDER BY c.checkin_date ASC, c.updated_at ASC
+      LIMIT 5000`,
+    args
+  );
+  if (!rows.length) {
+    throw new ApiError(404, 'NO_DATA', '所选时间范围内还没有打卡记录，先去完成一次学习打卡吧');
+  }
+
+  const paths = await unitPaths(rows.map((r) => Number(r.unit_id)));
+  const items = rows.map((r) => ({
+    date: r.checkin_date,
+    title: r.title,
+    path: paths.get(Number(r.unit_id)) || r.title,
+    difficulty: EXPORT_DIFF_CN[Number(r.difficulty)] || '',
+    statusText: r.status === 'revoked' ? '已撤销打卡' : '已完成',
+    at: M.fmt(r.updated_at) || '',
+  }));
+
+  const rangeText = (from || '最早') + ' ~ ' + (to || '至今');
+  const name = req.session.name || req.session.username || '同学';
+  const today = todayStr();
+  const meta = {
+    title: 'Linux 学习打卡记录 · ' + name,
+    subtitle: '统计区间：' + rangeText + '　　共 ' + items.length + ' 条　　导出时间：' +
+      M.fmt(new Date()) + '　　（' + req.session.member.label + '）',
+    filename: '打卡记录-' + name + '-' + today,
+  };
+
+  const out = exporter.build(format, items, meta);
+
+  // 记录导出流水（失败不影响下载）；注意 `rows` 是 MySQL 保留字，必须加反引号
+  db.run(
+    'INSERT INTO export_logs (student_id, format, `rows`, date_from, date_to, request_ip)' +
+    ' VALUES (?,?,?,?,?,?)',
+    [req.session.id, format, items.length, from, to,
+      str(req.ip || req.headers['x-forwarded-for'] || '', 60)]
+  ).catch((e) => {
+    if (process.env.NODE_ENV !== 'test') console.warn('[export_logs]', e.message);
+  });
+  logActivity('student', req.session.id, req.session.username, 'export_checkins', format,
+    '导出 ' + items.length + ' 条打卡记录（' + rangeText + '）');
+
+  res.setHeader('Content-Type', out.mime);
+  res.setHeader('Content-Disposition', contentDisposition(out.filename));
+  res.setHeader('Content-Length', String(out.buffer.length));
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Export-Format', out.format);
+  res.setHeader('X-Export-Rows', String(items.length));
+  res.end(out.buffer);
 }));
 
 /* ───────────────────────── 督促消息 ───────────────────────── */
@@ -314,7 +490,7 @@ router.post('/my/messages/:targetId/done', ah(async (req, res) => {
 /* ───────────────────────── 练习 / 出题 ───────────────────────── */
 
 /** GET /api/my/exercises?unitId= */
-router.get('/my/exercises', ah(async (req, res) => {
+router.get('/my/exercises', auth.requireSuper, ah(async (req, res) => {
   const sid = req.session.id;
   const unitId = clampInt(req.query.unitId, 1, 1e9, 0);
   const where = unitId ? 'q.unit_id = ? AND' : '';
@@ -343,7 +519,7 @@ router.get('/my/exercises', ah(async (req, res) => {
 }));
 
 /** POST /api/my/exercises/submit  { questionId, answer } */
-router.post('/my/exercises/submit', ah(async (req, res) => {
+router.post('/my/exercises/submit', auth.requireSuper, ah(async (req, res) => {
   const sid = req.session.id;
   const qid = clampInt(req.body.questionId, 1, 1e9, 0);
   const ans = str(req.body.answer, 500);
