@@ -39,6 +39,14 @@
     } catch (e) { /* 隐私模式 / 存储被禁用时静默降级 */ }
   }
 
+  /** 静态托管回退：前端部署在 GitHub Pages / eojjr.cn 等纯静态环境时，
+      同源没有 /api，自动回退到默认后端（index.html 里的 LINUX_STUDY_API 优先） */
+  var FALLBACK_API = 'https://jiyu-production-3034.up.railway.app';
+  function isStaticHost() {
+    var h = w.location.hostname;
+    return h === 'eojjr.cn' || /^[a-z0-9-]+\.github\.io$/i.test(h);
+  }
+
   /** 解析后端基地址 */
   function resolveApiBase() {
     // A. 部署时写死（index.html 里可覆盖）
@@ -64,11 +72,22 @@
       }
     } catch (e) { /* 老浏览器无 URLSearchParams，忽略 */ }
 
-    // C. localStorage
-    var saved = readLS(LS_BASE);
-    if (saved && isValidHttp(saved)) return trimSlash(saved);
+    // C. localStorage（用户显式保存过：含空串「同源」也尊重）
+    var raw = null;
+    try { raw = w.localStorage.getItem(LS_BASE); } catch (e) { /* 忽略 */ }
+    if (raw !== null) {
+      if (raw === '') return '';
+      if (isValidHttp(raw)) return trimSlash(raw);
+    }
 
-    // D. 同源
+    // D. 静态托管环境（GitHub Pages / eojjr.cn）：同源没有后端，回退默认后端
+    if (isStaticHost()) {
+      // eslint-disable-next-line no-console
+      console.warn('[config] 静态托管环境未配置后端地址，回退到：' + FALLBACK_API);
+      return FALLBACK_API;
+    }
+
+    // E. 同源（本地开发 / 后端托管前端）
     return '';
   }
 

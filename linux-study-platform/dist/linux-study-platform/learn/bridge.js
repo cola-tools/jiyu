@@ -16,11 +16,21 @@
   'use strict';
 
   /* ══════════════ 0. 配置 ══════════════ */
+  /* 静态托管回退：前端部署在 GitHub Pages / eojjr.cn 等纯静态环境时，
+     同源没有 /api（POST 会 405、GET 会 404），自动回退到默认后端。
+     index.html 里显式设置 window.WB_API_BASE 时优先生效。 */
+  var FALLBACK_API = 'https://jiyu-production-3034.up.railway.app';
+  function isStaticHost() {
+    var h = location.hostname;
+    return h === 'eojjr.cn' || /\.github\.io$/i.test(h)
+      || /^(www\.)?eojjr\.cn$/i.test(h);
+  }
   var CFG = {
     /* 同源部署时留空即可；若前端单独部署（GitHub Pages / 本地双击打开），
        可通过 window.WB_API_BASE 指定后端地址，例如 'https://api.xxx.com' */
     apiBase: (typeof window.WB_API_BASE === 'string') ? window.WB_API_BASE.replace(/\/+$/, '') :
-      (location.protocol === 'file:' ? 'http://127.0.0.1:3210' : ''),
+      (location.protocol === 'file:' ? 'http://127.0.0.1:3210' :
+        (isStaticHost() ? (console.warn('[bridge] 未检测到 WB_API_BASE，回退到默认后端：' + FALLBACK_API), FALLBACK_API) : '')),
     tokenKey: 'wb.token',
     themeKey: 'wb.theme',
     pollMs: 30000,
