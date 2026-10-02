@@ -172,7 +172,7 @@
     },
 
     /* ── 注册 / 忘记密码 / 验证码 ── */
-    captcha: function () { return request('POST', '/auth/captcha', { body: {}, auth: false }); },
+    captcha: function () { return request('GET', '/auth/captcha', { auth: false }); },
     sms: function (phone, scene, captchaToken, captcha) {
       return request('POST', '/auth/sms', {
         body: { phone: phone, scene: scene || 'register', captchaToken: captchaToken, captcha: captcha },
