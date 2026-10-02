@@ -264,15 +264,6 @@
           '</form>' +
 
           '<div class="wb-msg" id="wbGateMsg"></div>' +
-          '<div class="wb-demo">' +
-            '<b>演示账号</b>（密码见括号）<br>' +
-            '永久会员 <code>student1 / xiaoran2026</code>　' +
-            '年会员 <code>student2 / linux2026</code><br>' +
-            '普通会员 <code>student3 / study2026</code>　' +
-            '周会员剩 2 天 <code>student4 / buddy2026</code>　' +
-            '已禁用 <code>student5 / hello2026</code><br>' +
-            '管理员后台 <code>admin / admin@2026</code>' +
-          '</div>' +
         '</div>';
       document.body.appendChild(g);
     }
