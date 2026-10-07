@@ -3,6 +3,7 @@
 // 运维说明：如需放开某一项防护，注释对应代码块即可
 // 注意：前端防护为基础安全措施，无法完全杜绝专业技术人员逆向
 
+
 // 1. 全局禁用鼠标右键菜单
 document.addEventListener('contextmenu', function(e) {
     e.preventDefault(); // 阻止浏览器默认右键菜单弹出
