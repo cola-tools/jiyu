@@ -398,6 +398,10 @@ CORS_ORIGINS=https://yourname.github.io,https://study.example.com
 
 > **从旧版本升级**：只需在 MySQL 里执行一次 `db/migrate_v2_member.sql`（幂等脚本，可重复执行），
 > 它会为 `students` 增加会员字段与手机号唯一约束，并新建会员相关 5 张表；执行完重启后端即可。
+>
+> **升级到提醒功能（v3）**：再执行一次 `db/migrate_v3_notice.sql`（同样幂等），
+> 新建 `notices`（管理员提醒）与 `notice_dismiss`（学生关闭记录）两张表；执行完重启后端即可。
+> 全新部署无需执行任何迁移脚本，直接初始化 `db/schema.sql` 就自带这两张表。
 
 > 数据库结构、字段与索引见 `db/schema.sql` 文件内注释；种子数据由 `db/gen_seed.py` 生成。
 
@@ -570,7 +574,22 @@ mysqldump -h 主机 -P 端口 -u 用户 -p 库名 > backup-$(date +%F).sql
 > 到期强制退出），以及为普通会员保留一条「免费第一章」的只读入口。
 > 若要物理删除，请一并迁移那部分断言，并移除 `server/src/index.js` 里的 LEGACY `/learn` 静态托管。
 
-### 14.6 本地验证（五套测试，共 424 项断言）
+### 14.6 提醒学生（管理员群发 → 学生端右上角）
+
+管理员更新内容后，可以在侧栏「🔔 提醒学生」页发一条提醒：
+
+| 环节   | 说明                                                                 |
+| ---- | ------------------------------------------------------------------ |
+| 发送   | 管理端侧栏 **互动 → 提醒学生**：填「提醒内容」（≤1000 字）+ 选「重要性」（普通 / 重要 / 紧急）→ 点「🔔 提醒学生」，群发全体启用中的学生 |
+| 展示   | 学生端**右上角**浮出提醒卡（纸卡 + 纸胶带 + 重要性色标）；未登录的学生**登录后立即显示**，已登录的学生**直接显示**（每 60s 静默拉取新提醒） |
+| 关闭   | **只能通过卡片右上角 ✕ 关闭**，绝不自动关闭、切换页面也不关闭                                  |
+| 持久   | 未关闭的提醒**下次登录继续显示**，直到学生手动点 ✕；关闭后写入 `notice_dismiss`，永不再显示          |
+| 撤回   | 管理员在历史列表点「撤回」，学生端立即不再显示                                             |
+
+数据表：`notices`（提醒主表）+ `notice_dismiss`（学生关闭记录，唯一键 `notice_id + student_id`）。
+接口：`POST/GET/DELETE /api/admin/notices`、`GET /api/my/notices`、`POST /api/my/notices/:id/dismiss`。
+
+### 14.7 本地验证（六套测试，共 469 项断言）
 
 ```bash
 # 0) 前置：MySQL（测试库端口 3399）+ 后端
@@ -583,17 +602,21 @@ node tests/api-member-smoke.js          # 123 项
 node tests/api-crossorigin-smoke.js     #  16 项
 
 # 3) 融合平台浏览器端到端（单一登录窗 / 课程 / 命令 / 技巧 / 注册 / 忘记密码 / 移动端）
-node tests/browser-learn.js             # 102 项
+node tests/browser-learn.js             # 104 项（其中 2 项是「首讲打卡/撤销」的条件断言，
+                                        #        若首讲已处于打卡状态会显示 102，属正常浮动）
 
 # 4) 平台浏览器端到端（学生端 + 管理端 + 多尺寸适配）
-node tests/browser-smoke.js             # 106 项
+node tests/browser-smoke.js             # 107 项
 
 # 5) 会员体系浏览器端到端
 node tests/browser-member.js            #  77 项
+
+# 6) 提醒功能浏览器端到端（发送 / 展示 / 不自动关闭 / 叉号关闭 / 撤回 / 深色）
+node tests/browser-notice.js            #  42 项
 ```
 
-五套套件都会**自动复位演示账号基线、清理自己创建的测试账号**，可以反复运行；
-`browser-*` 需要本机装有 Chrome，截图输出到 `tests/shots/`。
+六套套件都会**自动复位演示账号基线、清理自己创建的测试账号**（`browser-notice.js` 也会清理自己产生的提醒），
+可以反复运行；`browser-*` 需要本机装有 Chrome，截图输出到 `tests/shots/`。
 
 ---
 
@@ -603,8 +626,8 @@ node tests/browser-member.js            #  77 项
 linux-study-platform/
 ├── web/                     # ⭐ 融合平台前端（打卡 + 学习，部署到 GitHub Pages 的根）
 │   ├── index.html           #   入口页（单一登录窗口 + 注入口 window.LINUX_STUDY_API）
-│   ├── css/  theme.css app.css member.css learn.css login.css
-│   └── js/   config util api store ui member
+│   ├── css/  theme.css app.css member.css learn.css login.css notice.css
+│   └── js/   config util api store ui member notice
 │             + views/{login,student,learn,admin} + app
 ├── learn/                   # 旧独立学习平台（已摘除入口、不参与部署，仅存档 + 会员回归用）
 │   ├── index.html           #   生成产物（勿手改，改 tools/build-learn.js 后重新构建）
@@ -618,8 +641,9 @@ linux-study-platform/
 │   ├── src/scripts/init-db.js  # 一键初始化数据库（--force 重建）
 │   └── test/smoke.js        #   后端冒烟测试
 ├── db/
-│   ├── schema.sql           # v2 全量表结构（MySQL 5.7+ 兼容）
+│   ├── schema.sql           # v3 全量表结构（MySQL 5.7+ 兼容，含提醒表）
 │   ├── migrate_v2_member.sql#   v1 → v2 会员体系幂等迁移脚本
+│   ├── migrate_v3_notice.sql#   v2 → v3 提醒功能幂等迁移脚本
 │   ├── seed_accounts.sql / seed_content.sql / gen_seed.py
 ├── tools/
 │   ├── build-deploy.js      # ⭐ 生成单平台部署包（不再产出 learn/）
@@ -627,11 +651,12 @@ linux-study-platform/
 ├── tests/
 │   ├── api-member-smoke.js  # 会员体系接口端到端测试（123 项）
 │   ├── api-crossorigin-smoke.js # 跨域部署冒烟（16 项）
-│   ├── browser-learn.js     # 融合平台浏览器端到端测试（102 项）
-│   ├── browser-smoke.js     # 平台浏览器端到端测试（106 项）
+│   ├── browser-learn.js     # 融合平台浏览器端到端测试（104 项）
+│   ├── browser-smoke.js     # 平台浏览器端到端测试（107 项）
 │   ├── browser-member.js    # 会员体系浏览器端到端测试（77 项）
+│   ├── browser-notice.js    # 提醒功能浏览器端到端测试（42 项）
 │   └── lib/cdp.js           #   CDP 无头 Chrome 测试脚手架
 └── .github/workflows/deploy-pages.yml   # 前端自动发布流水线
 ```
 
-*文档版本：2026-10-08 · 对应当前代码（123 + 16 + 102 + 106 + 77 = 424 项端到端断言全部通过）*
+*文档版本：2026-10-08 · 对应当前代码（123 + 16 + 104 + 107 + 77 + 42 = 469 项端到端断言全部通过）*

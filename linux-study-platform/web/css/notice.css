@@ -1,0 +1,302 @@
+/* ══════════════════════════════════════════════════════════════════
+   notice.css · 提醒功能（管理端「提醒学生」页 + 学生端右上角提醒面板）
+   ──────────────────────────────────────────────────────────────────
+   沿用全站手绘语言：不规则圆角 + 虚线描边 + feTurbulence 抖动
+   + 荧光笔 / 纸胶带装饰；html.no-rough 下自动降级为直边。
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════ 1. 重要性配色（三档共用） ═══════════ */
+
+.np1 { --nc: var(--accent);      --nc-soft: var(--accent-soft); }
+.np2 { --nc: var(--warn);        --nc-soft: var(--warn-soft); }
+.np3 { --nc: var(--danger);      --nc-soft: var(--danger-soft); }
+
+.notice-chip.np1 { border-color: var(--accent) !important; color: var(--accent); }
+.notice-chip.np2 { border-color: var(--warn)   !important; color: var(--warn); }
+.notice-chip.np3 { border-color: var(--danger) !important; color: var(--danger); }
+
+/* ═══════════ 2. 学生端右上角提醒面板 ═══════════ */
+
+.notice-dock {
+  position: fixed;
+  top: calc(var(--top-h) + 10px);
+  right: 16px;
+  /* 高于顶栏(90) / 遮罩(95) / 侧栏(110)，低于普通弹层(400) 与会员门禁拦截层(900)，
+     否则弹窗会被提醒面板压住 */
+  z-index: 300;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;         /* 空白区不挡住页面点击 */
+}
+.notice-dock > * { pointer-events: auto; }
+
+.notice-dock-head {
+  align-self: stretch;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--mark);
+  border: 2px dashed var(--stroke-2);
+  border-radius: var(--r-chip);
+  filter: url(#rough-soft);
+  transform: rotate(-.6deg);
+  box-shadow: var(--shadow-press);
+}
+
+/* ───── 单条提醒卡 ───── */
+.notice-card {
+  position: relative;
+  padding: 14px 34px 12px 15px;
+  background: var(--surface);
+  border-radius: var(--r-card);
+  box-shadow: 5px 6px 0 var(--stroke-soft);
+  animation: ncIn .42s var(--ease) both;
+  transition: transform var(--t), box-shadow var(--t), opacity var(--t);
+}
+.notice-card::before {
+  content: "";
+  position: absolute; inset: 0;
+  border: 2.5px solid var(--nc, var(--stroke));
+  border-radius: var(--r-card);
+  filter: url(#rough);
+  pointer-events: none;
+  z-index: 0;
+}
+.notice-card > * { position: relative; z-index: 1; }
+.notice-card:hover { transform: translate(-2px, -2px); box-shadow: 7px 8px 0 var(--stroke-soft); }
+.notice-card.closing {
+  opacity: 0;
+  transform: translateX(26px) rotate(3deg) scale(.94);
+  box-shadow: none;
+}
+
+@keyframes ncIn {
+  from { opacity: 0; transform: translateX(30px) rotate(2.4deg) scale(.94); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* 纸胶带 */
+.nc-tape {
+  position: absolute;
+  top: -11px; left: 26px;
+  z-index: 2;
+  width: 74px; height: 22px;
+  border: 2px dashed var(--stroke-2);
+  border-radius: 4px 9px 5px 8px / 8px 5px 9px 4px;
+  background: var(--nc-soft, var(--mark));
+  filter: url(#rough-soft);
+  transform: rotate(-6.5deg);
+  pointer-events: none;
+}
+
+/* 关闭按钮（唯一的关闭方式） */
+.nc-close {
+  position: absolute;
+  top: 7px; right: 7px;
+  z-index: 3;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; line-height: 1;
+  color: var(--ink-3);
+  background: transparent;
+  border: 2px dashed var(--stroke-2);
+  border-radius: 50% 46% 52% 48% / 48% 52% 46% 50%;
+  cursor: pointer;
+  transition: color var(--t-fast), background var(--t-fast), transform var(--t-fast);
+}
+.nc-close:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  transform: rotate(90deg);
+}
+.nc-close:active { transform: rotate(90deg) scale(.9); }
+
+.nc-head {
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 7px;
+}
+.nc-bell { font-size: 17px; line-height: 1; }
+.nc-title {
+  font-size: 14px; font-weight: 800; color: var(--ink);
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nc-pri {
+  flex: none;
+  padding: 2px 9px;
+  font-size: 11px; font-weight: 700;
+  color: var(--nc, var(--ink-2));
+  background: var(--nc-soft, var(--surface-2));
+  border: 2px dashed var(--nc, var(--stroke-2));
+  border-radius: var(--r-chip);
+  filter: url(#rough-soft);
+}
+
+.nc-body {
+  font-size: 14.5px; line-height: 1.75;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 168px;
+  overflow-y: auto;
+}
+.nc-body::-webkit-scrollbar { width: 6px; }
+.nc-body::-webkit-scrollbar-thumb {
+  background: var(--stroke-soft); border-radius: 4px;
+}
+
+.nc-foot {
+  display: flex; justify-content: space-between; gap: 8px;
+  margin-top: 9px; padding-top: 7px;
+  border-top: 1.5px dashed var(--stroke-soft);
+  font-size: 11.5px; color: var(--ink-3);
+}
+.nc-hint { font-style: italic; }
+
+/* ═══════════ 3. 管理端「提醒学生」页 ═══════════ */
+
+.notice-send-panel { position: relative; }
+.notice-send-panel .panel-body { display: flex; flex-direction: column; gap: 14px; }
+.notice-send-panel .field { margin-bottom: 0; }
+.notice-send-panel .req { color: var(--danger); font-weight: 800; }
+
+/* 内容输入框（手绘描边由伪元素承载，避免位移滤镜影响文字清晰度） */
+.notice-input {
+  width: 100%;
+  min-height: 108px;
+  padding: 12px 14px;
+  font-family: var(--font-hand);
+  font-size: 15px; line-height: 1.8;
+  color: var(--ink);
+  background: var(--paper-2);
+  border: 2.5px solid transparent;   /* 真实边框透明，描边交给 ::after */
+  border-radius: var(--r-input);
+  resize: vertical;
+  outline: none;
+  transition: background var(--t-fast);
+}
+.notice-input:focus { background: var(--surface); }
+.notice-input::placeholder { color: var(--ink-3); }
+
+/* 包一层承载抖动描边：位移滤镜直接作用在 textarea 上会让文字发虚 */
+.notice-inp-wrap { position: relative; display: block; }
+.notice-inp-wrap .notice-input { position: relative; z-index: 1; }
+.notice-inp-wrap::after {
+  content: "";
+  position: absolute; inset: 0;
+  border: 2.5px solid var(--stroke);
+  border-radius: var(--r-input);
+  filter: url(#rough);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ───── 重要性三选一 ───── */
+.notice-pri {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.npri-btn {
+  position: relative;
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 13px;
+  text-align: left;
+  background: var(--surface-2);
+  border: 2.5px solid transparent;
+  border-radius: var(--r-btn);
+  cursor: pointer;
+  transition: transform var(--t-fast), background var(--t-fast);
+}
+.npri-btn::after {
+  content: "";
+  position: absolute; inset: 0;
+  border: 2.5px dashed var(--stroke-2);
+  border-radius: var(--r-btn);
+  filter: url(#rough);
+  pointer-events: none;
+}
+.npri-btn > * { position: relative; z-index: 1; }
+.npri-btn:hover { transform: translate(-1px, -1px); background: var(--surface-3); }
+.npri-btn.on { background: var(--nc-soft); }
+.npri-btn.on::after { border-style: solid; border-color: var(--nc); }
+
+.np-ico { font-size: 21px; line-height: 1; flex: none; }
+.np-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.np-txt b { font-size: 15px; font-weight: 800; color: var(--ink); }
+.np-txt i { font-size: 11.5px; font-style: normal; color: var(--ink-3); }
+.npri-btn.on .np-txt b { color: var(--nc); }
+
+/* ───── 发送行 ───── */
+.notice-send-row {
+  display: flex; align-items: center; gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* ───── 历史列表 ───── */
+.notice-list-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px;
+  margin: 20px 0 12px;
+}
+.notice-list-head h3 { margin: 0; font-size: 18px; font-weight: 800; color: var(--ink); }
+
+.notice-list { display: flex; flex-direction: column; gap: 14px; }
+.notice-item.is-revoked { opacity: .62; }
+.notice-item.is-revoked .notice-content { text-decoration: line-through; }
+
+.notice-content {
+  margin-bottom: 12px;
+  padding: 11px 14px;
+  font-size: 15px; line-height: 1.8;
+  color: var(--ink);
+  background: var(--paper-2);
+  border-left: 5px solid var(--mark);
+  border-radius: 6px 16px 16px 6px / 16px 6px 6px 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.notice-big-num {
+  font-family: var(--font-num);
+  font-size: 26px; font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.notice-big-num small { font-size: 13px; font-weight: 400; color: var(--ink-3); }
+
+/* ═══════════ 4. 降级：不支持 SVG 滤镜时去掉抖动 ═══════════ */
+html.no-rough .notice-card::before,
+html.no-rough .npri-btn::after,
+html.no-rough .notice-inp-wrap::after,
+html.no-rough .nc-tape,
+html.no-rough .notice-dock-head,
+html.no-rough .nc-pri { filter: none; }
+
+/* ═══════════ 5. 响应式 ═══════════ */
+
+@media (max-width: 900px) {
+  .notice-pri { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .notice-dock {
+    top: calc(var(--top-h) + 6px);
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+  }
+  .notice-card { padding: 12px 32px 11px 13px; }
+  .nc-body { max-height: 130px; }
+}
+
+@media (max-width: 380px) {
+  .notice-dock { right: 6px; left: 6px; }
+  .nc-foot { font-size: 11px; }
+}

@@ -498,6 +498,51 @@ router.post('/my/messages/:targetId/done', ah(async (req, res) => {
   res.json({ ok: true });
 }));
 
+/* ───────────────────────── 提醒面板 ───────────────────────── */
+
+const NOTICE_PRIORITY = { 1: '普通', 2: '重要', 3: '紧急' };
+
+/**
+ * GET /api/my/notices
+ * 只返回「有效且本学生尚未关闭」的提醒：
+ *   · 学生点叉号 → 写入 notice_dismiss → 不再返回
+ *   · 没点叉号  → 每次登录都继续返回，直到手动关闭
+ */
+router.get('/my/notices', ah(async (req, res) => {
+  const sid = req.session.id;
+  const rows = await db.q(
+    `SELECT n.id, n.content, n.priority, n.admin_name, n.created_at
+       FROM notices n
+      WHERE n.revoked_at IS NULL
+        AND NOT EXISTS (
+              SELECT 1 FROM notice_dismiss d
+               WHERE d.notice_id = n.id AND d.student_id = ?)
+      ORDER BY n.priority DESC, n.id DESC
+      LIMIT 20`,
+    [sid]
+  );
+  res.json({
+    items: rows.map((r) => ({
+      id: Number(r.id), content: r.content, priority: Number(r.priority),
+      priorityText: NOTICE_PRIORITY[Number(r.priority)] || '普通',
+      adminName: r.admin_name || '管理员', createdAt: r.created_at,
+    })),
+  });
+}));
+
+/** POST /api/my/notices/:id/dismiss —— 学生点叉号关闭提醒（永久不再显示） */
+router.post('/my/notices/:id/dismiss', ah(async (req, res) => {
+  const id = clampInt(req.params.id, 1, 1e15, 0);
+  const n = await db.one('SELECT id FROM notices WHERE id = ? AND revoked_at IS NULL', [id]);
+  if (!n) throw notFound('提醒不存在');
+  await db.run(
+    `INSERT INTO notice_dismiss (notice_id, student_id) VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE dismissed_at = NOW()`,
+    [id, req.session.id]
+  );
+  res.json({ ok: true });
+}));
+
 /* ───────────────────────── 练习 / 出题 ───────────────────────── */
 
 /** GET /api/my/exercises?unitId= */

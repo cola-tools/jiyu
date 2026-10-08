@@ -3,7 +3,7 @@
    ──────────────────────────────────────────────────────────────────
    职责：启动流程 / 主题初始化 / 导航渲染 / 视图路由 / 打卡操作栏
         全局事件委托（[data-go] / 收起菜单 / 未读轮询）
-   加载顺序：config → util → api → store → ui → views/* → app
+   加载顺序：config → util → api → store → ui → member → notice → views/* → app
    ══════════════════════════════════════════════════════════════════ */
 (function (w, d) {
   'use strict';
@@ -17,6 +17,7 @@
   var SV = w.StudentView;
   var AV = w.AdminView;
   var MG = w.MemberGate;
+  var NP = w.NoticePanel;
 
   var App = {};
 
@@ -56,6 +57,7 @@
         { key: 'units', title: '目录内容', icon: '📚' },
       ] },
       { group: '互动', items: [
+        { key: 'notices',   title: '提醒学生', icon: '🔔' },
         { key: 'urges',     title: '督促管理', icon: '📣', badge: 'urge' },
         { key: 'questions', title: '题库管理', icon: '✏️' },
       ] },
@@ -170,6 +172,9 @@
     }
 
     App.go(isAdmin ? 'dashboard' : 'dashboard', { silent: true });
+
+    // 学生端右上角提醒面板：未登录 → 登录后显示；已登录 → 直接显示
+    if (NP) { if (isAdmin) NP.stop(); else NP.start(); }
 
     UI.toast('数据已同步 · ' + (isAdmin ? '管理后台' : '学生端'),
       'info', '欢迎，' + (user.name || user.username), 2400);
@@ -304,6 +309,7 @@
       if (!ok) return;
       var done = function () {
         if (MG) MG.stopPolling();
+        if (NP) NP.stop();          // 清掉学生端右上角提醒面板与其轮询
         STORE.clearSession();
         onNotLogged();
         if (LoginView) LoginView.show();
@@ -485,6 +491,7 @@
       onLogged(e.detail);
     });
     w.addEventListener('lsp:logout', function () {
+      if (NP) NP.stop();
       onNotLogged();
       if (LoginView) LoginView.show();
     });

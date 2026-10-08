@@ -539,12 +539,13 @@ async function fetchBaseline() {
 
     ok('管理端品牌副标题正确', /管理后台/.test(await cdp.eval('document.getElementById("brandSub").textContent')));
     const admNavN = await cdp.eval('document.querySelectorAll("#nav .nav-item").length');
-    ok('侧边栏包含 9 个管理端菜单 [' + admNavN + ']', admNavN === 9);
+    ok('侧边栏包含 10 个管理端菜单 [' + admNavN + ']', admNavN === 10);
     const admNavKeys = await cdp.eval(`(function(){
       return Array.prototype.map.call(document.querySelectorAll('#nav [data-nav]'), function(n){ return n.dataset.nav; }).join(',');
     })()`);
     ok('管理端菜单含会员管理 / 定价配置：' + admNavKeys,
       /members/.test(admNavKeys) && /pricing/.test(admNavKeys));
+    ok('管理端菜单含「提醒学生」：' + admNavKeys, /notices/.test(admNavKeys));
 
     const admStats = await cdp.eval(`(function(){
       var out = [];

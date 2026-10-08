@@ -725,6 +725,68 @@ router.delete('/urges/:id', ah(async (req, res) => {
   res.json({ ok: true });
 }));
 
+/* ═══════════════════ 4.5 提醒学生 ═══════════════════ */
+
+const NOTICE_PRIORITY = { 1: '普通', 2: '重要', 3: '紧急' };
+
+/** POST /api/admin/notices  { content, priority }
+ *  群发提醒：发给全体启用中的学生，学生端右上角面板展示，
+ *  学生点叉号才关闭；未关闭则下次登录继续显示。
+ */
+router.post('/notices', ah(async (req, res) => {
+  const content = str(req.body.content, 4000).trim();
+  if (!content) throw bad('请填写提醒内容');
+  if (content.length > 1000) throw bad('提醒内容最多 1000 字');
+  const priority = clampInt(req.body.priority, 1, 3, 1);
+
+  const cnt = Number(await db.scalar('SELECT COUNT(*) FROM students WHERE status = 1') || 0);
+  const r = await db.run(
+    `INSERT INTO notices (admin_id, admin_name, content, priority, target_count)
+     VALUES (?, ?, ?, ?, ?)`,
+    [req.session.id, req.session.name || '管理员', content, priority, cnt]
+  );
+  const id = Number(r.insertId);
+  await logActivity('admin', req.session.id, req.session.name, 'notice_send',
+    `#${id}`, `${NOTICE_PRIORITY[priority] || '普通'}｜覆盖 ${cnt} 人｜${content.slice(0, 60)}`);
+  res.json({ ok: true, id, targets: cnt });
+}));
+
+/** GET /api/admin/notices —— 历史提醒列表（含已关闭 / 未关闭人数） */
+router.get('/notices', ah(async (_req, res) => {
+  const rows = await db.q(
+    `SELECT n.id, n.content, n.priority, n.target_count, n.admin_name,
+            n.created_at, n.revoked_at,
+            (SELECT COUNT(*) FROM notice_dismiss d WHERE d.notice_id = n.id) AS dismissed_cnt
+       FROM notices n
+      ORDER BY n.id DESC LIMIT 200`
+  );
+  res.json({
+    items: rows.map((r) => {
+      const target = Number(r.target_count || 0);
+      const dismissed = Number(r.dismissed_cnt || 0);
+      return {
+        id: Number(r.id), content: r.content, priority: Number(r.priority),
+        priorityText: NOTICE_PRIORITY[Number(r.priority)] || '普通',
+        targetCount: target, dismissedCount: dismissed,
+        pendingCount: Math.max(0, target - dismissed),
+        adminName: r.admin_name || '管理员', createdAt: r.created_at,
+        revoked: !!r.revoked_at,
+      };
+    }),
+  });
+}));
+
+/** DELETE /api/admin/notices/:id —— 撤回并删除提醒（连带清除关闭记录） */
+router.delete('/notices/:id', ah(async (req, res) => {
+  const id = clampInt(req.params.id, 1, 1e15, 0);
+  const n = await db.one('SELECT id, content FROM notices WHERE id = ?', [id]);
+  if (!n) throw notFound('提醒不存在');
+  await db.run('DELETE FROM notices WHERE id = ?', [id]);
+  await logActivity('admin', req.session.id, req.session.name, 'notice_delete',
+    `#${id}`, str(n.content, 60));
+  res.json({ ok: true });
+}));
+
 /* ═══════════════════ 5. 题库 ═══════════════════ */
 
 router.get('/questions', ah(async (req, res) => {

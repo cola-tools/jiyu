@@ -112,6 +112,11 @@ check('页面内无 ../learn/ 外链残留',
   !/\.\.\/learn\//.test(w) && !/\.\.\/learn\//.test(wApp));
 check('验证码接口走 POST（与后端路由一致）',
   /request\('POST',\s*'\/auth\/captcha'/.test(fs.readFileSync(path.join(OUT, 'js', 'api.js'), 'utf8')));
+/* 提醒学生（管理员群发 → 学生端右上角面板，叉号关闭） */
+check('提醒功能资源已打包（css/notice.css + js/notice.js）',
+  fs.existsSync(path.join(OUT, 'css', 'notice.css')) &&
+  fs.existsSync(path.join(OUT, 'js', 'notice.js')));
+check('页面含学生端提醒面板容器 #noticeDock', w.includes('id="noticeDock"'));
 
 const du = (d) => fs.readdirSync(d).length + ' 项';
 console.log('\n产物：' + OUT);

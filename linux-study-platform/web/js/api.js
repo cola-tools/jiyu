@@ -245,6 +245,10 @@
     messages: function () { return request('GET', '/my/messages'); },
     readMessage: function (targetId) { return request('POST', '/my/messages/' + targetId + '/read', { body: {} }); },
     doneMessage: function (targetId) { return request('POST', '/my/messages/' + targetId + '/done', { body: {} }); },
+
+    /* 提醒面板（管理员群发，学生端右上角展示，叉号关闭后不再出现） */
+    notices: function () { return request('GET', '/my/notices'); },
+    noticeDismiss: function (id) { return request('POST', '/my/notices/' + id + '/dismiss', { body: {} }); },
     exercises: function (unitId) { return request('GET', '/my/exercises', { query: { unitId: unitId } }); },
     submitAnswer: function (questionId, answer) {
       return request('POST', '/my/exercises/submit', { body: { questionId: questionId, answer: answer } });
@@ -325,6 +329,11 @@
     urgeCreate: function (data) { return request('POST', '/admin/urges', { body: data }); },
     urgeTargets: function (id) { return request('GET', '/admin/urges/' + id + '/targets'); },
     urgeDelete: function (id) { return request('DELETE', '/admin/urges/' + id); },
+
+    /* 提醒学生（群发全体学生） */
+    notices: function () { return request('GET', '/admin/notices'); },
+    noticeCreate: function (data) { return request('POST', '/admin/notices', { body: data }); },
+    noticeDelete: function (id) { return request('DELETE', '/admin/notices/' + id); },
 
     /* 题库 */
     questions: function (unitId) { return request('GET', '/admin/questions', { query: { unitId: unitId } }); },

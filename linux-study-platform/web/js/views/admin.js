@@ -23,6 +23,8 @@
     logAction: '',
     qUnitId: '',
     urgeFilter: '',
+    /* 提醒学生：当前选中的重要性（1普通 2重要 3紧急） */
+    noticePriority: 1,
     /* 会员管理筛选 */
     memberQuery: '',
     memberType: '',
@@ -1327,6 +1329,182 @@
 
   /* ═══════════════════ 视图：题库管理 ═══════════════════ */
 
+  /* ═══════════════════ 视图：提醒学生 ═══════════════════ */
+
+  var NOTICE_PRI = [
+    { v: 1, t: '普通', ico: '📝', cls: 'np1', desc: '一般性告知' },
+    { v: 2, t: '重要', ico: '❗', cls: 'np2', desc: '请尽快处理' },
+    { v: 3, t: '紧急', ico: '🚨', cls: 'np3', desc: '立即查看' },
+  ];
+
+  function noticePriChip(priority) {
+    var p = NOTICE_PRI.filter(function (x) { return x.v === Number(priority); })[0] || NOTICE_PRI[0];
+    return '<span class="chip xsmall notice-chip ' + p.cls + '">' + p.ico + ' ' + p.t + '</span>';
+  }
+
+  function noticeSendPanel() {
+    var btns = NOTICE_PRI.map(function (p) {
+      return '<button type="button" class="npri-btn ' + p.cls + (S.noticePriority === p.v ? ' on' : '') +
+        '" data-notice-pri="' + p.v + '">' +
+        '<span class="np-ico">' + p.ico + '</span>' +
+        '<span class="np-txt"><b>' + p.t + '</b><i>' + p.desc + '</i></span>' +
+        '</button>';
+    }).join('');
+    return '<div class="panel notice-send-panel">' +
+      '<div class="panel-head"><h3>✍️ 写一条新提醒</h3>' +
+        '<span class="chip xsmall">群发全体学生</span></div>' +
+      '<div class="panel-body">' +
+        '<div class="field">' +
+          '<div class="field-label">提醒内容 <span class="req">*</span></div>' +
+          '<span class="notice-inp-wrap"><textarea id="noticeContent" class="notice-input" rows="4" ' +
+            'maxlength="1000" ' +
+            'placeholder="例如：第 3 章已更新 20 条命令，请同学们本周内完成打卡…"></textarea></span>' +
+          '<div class="field-hint"><span id="noticeCount">0</span> / 1000 字　·　' +
+            '学生端右上角展示，点叉号才关闭</div>' +
+        '</div>' +
+        '<div class="field">' +
+          '<div class="field-label">重要性</div>' +
+          '<div class="notice-pri" id="noticePri">' + btns + '</div>' +
+        '</div>' +
+        '<div class="notice-send-row">' +
+          '<button class="btn btn-primary" id="btnSendNotice" type="button">🔔 提醒学生</button>' +
+          '<span class="small dim">发送后，未关闭该提醒的学生每次登录都会继续看到</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  A.notices = {
+    title: '提醒学生',
+    icon: '🔔',
+    nav: true,
+    group: '互动',
+    render: function (host) {
+      host.innerHTML = U.loading('正在加载提醒记录…');
+
+      API.admin.notices().then(function (r) {
+        var items = r.items || [];
+
+        var totalPending = items.reduce(function (a, x) { return a + (x.pendingCount || 0); }, 0);
+        var urgent = items.filter(function (x) { return x.priority === 3 && !x.revoked; }).length;
+
+        var html = '';
+        html += '<div class="page-head">' +
+          '<div><h2>🔔 提醒学生</h2>' +
+            '<div class="ph-sub">更新内容后发一条提醒 · 学生端右上角即时展示</div></div>' +
+        '</div>';
+
+        html += '<div class="stats-grid">' +
+          statCard('🔔', '提醒总数', items.length, '条', '累计发送记录', '') +
+          statCard('🚨', '紧急提醒', urgent, '条', '优先级最高的提醒', 'accent') +
+          statCard('👀', '待关闭', totalPending, '人次', '学生尚未点叉号关闭', 'ok') +
+          statCard('🙆', '已关闭', items.reduce(function (a, x) { return a + (x.dismissedCount || 0); }, 0),
+            '人次', '学生已手动关闭', '') +
+        '</div>';
+
+        html += noticeSendPanel();
+
+        if (!items.length) {
+          html += emptyBox('📭', '还没有发过提醒',
+            '在上面填写内容与重要性，点「提醒学生」即可群发', '');
+          host.innerHTML = html;
+          bindNoticeForm(host);
+          return;
+        }
+
+        html += '<div class="notice-list-head"><h3>📜 历史提醒</h3>' +
+          '<span class="small dim">共 ' + items.length + ' 条</span></div>';
+
+        html += '<div class="notice-list">';
+        items.forEach(function (n) {
+          html += '<div class="panel notice-item' + (n.revoked ? ' is-revoked' : '') + '" data-notice-row="' + n.id + '">' +
+            '<div class="panel-head">' +
+              '<h3>🔔 提醒 #' + n.id + '</h3>' +
+              noticePriChip(n.priority) +
+              (n.revoked ? '<span class="chip xsmall">已撤回</span>'
+                : '<span class="chip xsmall d1">生效中</span>') +
+              '<div class="ph-tools">' +
+                '<button class="btn btn-sm btn-danger" data-notice-del="' + n.id + '" type="button">撤回</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="panel-body">' +
+              '<div class="notice-content">' + U.esc(n.content) + '</div>' +
+              '<div class="grid3">' +
+                '<div><div class="field-label">送达情况</div>' +
+                  barLine(n.dismissedCount, n.targetCount) +
+                  '<div class="field-hint">已关闭 ' + n.dismissedCount + ' / ' + n.targetCount + ' 人</div></div>' +
+                '<div><div class="field-label">待关闭</div>' +
+                  '<div class="notice-big-num">' + n.pendingCount + ' <small>人</small></div>' +
+                  '<div class="field-hint">下次登录仍会看到</div></div>' +
+                '<div><div class="field-label">发送信息</div>' +
+                  '<div class="small dim2">' + U.esc(n.adminName) + '</div>' +
+                  '<div class="small dim">' + U.esc(U.fmtDT(n.createdAt, true)) + '</div></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        });
+        html += '</div>';
+
+        host.innerHTML = html;
+        bindNoticeForm(host);
+      }).catch(function (e) {
+        host.innerHTML = U.errorBox(e.message,
+          '<button class="btn btn-primary" data-act="retry" type="button">重新加载</button>');
+        var r = host.querySelector('[data-act="retry"]');
+        if (r) r.addEventListener('click', function () { A.notices.render(host); });
+      });
+    },
+  };
+
+  /** 绑定「写提醒」表单：字数统计 / 重要性切换 / 发送 */
+  function bindNoticeForm(host) {
+    var ta = host.querySelector('#noticeContent');
+    var cnt = host.querySelector('#noticeCount');
+    var priBox = host.querySelector('#noticePri');
+    var sendBtn = host.querySelector('#btnSendNotice');
+    if (!ta || !sendBtn) return;
+
+    ta.addEventListener('input', function () {
+      if (cnt) cnt.textContent = String(ta.value.length);
+    });
+
+    if (priBox) {
+      priBox.addEventListener('click', function (ev) {
+        var b = ev.target.closest ? ev.target.closest('[data-notice-pri]') : null;
+        if (!b) return;
+        S.noticePriority = Number(b.dataset.noticePri);
+        Array.prototype.forEach.call(priBox.querySelectorAll('.npri-btn'), function (x) {
+          x.classList.toggle('on', Number(x.dataset.noticePri) === S.noticePriority);
+        });
+      });
+    }
+
+    sendBtn.addEventListener('click', function () {
+      var content = (ta.value || '').trim();
+      if (!content) {
+        UI.toast('请先填写提醒内容', 'warn', '内容为空');
+        ta.focus();
+        return;
+      }
+      if (sendBtn.disabled) return;
+      sendBtn.disabled = true;
+      var old = sendBtn.textContent;
+      sendBtn.textContent = '发送中…';
+      API.admin.noticeCreate({ content: content, priority: S.noticePriority })
+        .then(function (res) {
+          UI.toast('提醒已发送给 ' + (res.targets || 0) + ' 名学生', 'ok', '发送成功');
+          ta.value = '';
+          if (cnt) cnt.textContent = '0';
+          A.notices.render(host);
+        })
+        .catch(function (e) { UI.errToast(e); })
+        .then(function () {
+          sendBtn.disabled = false;
+          sendBtn.textContent = old;
+        });
+    });
+  }
+
   A.questions = {
     title: '题库管理',
     icon: '✏️',
@@ -2605,6 +2783,34 @@
       if (c('[data-act="batch"]')) { openBatchImport(d.getElementById('view')); return; }
       if (c('[data-act="new-root"]')) { openUnitEditor(null, null, d.getElementById('view')); return; }
 
+      /* ───── 提醒学生 ───── */
+
+      var nDel = c('[data-notice-del]');
+      if (nDel) {
+        var nid = Number(nDel.dataset.noticeDel);
+        var nRow = nDel.closest('[data-notice-row]');
+        var nTxt = '';
+        if (nRow) {
+          var nc = nRow.querySelector('.notice-content');
+          if (nc) nTxt = U.trunc(nc.textContent, 60);
+        }
+        UI.confirm({
+          title: '撤回提醒',
+          message: '确定撤回这条提醒吗？',
+          detail: (nTxt ? '内容：' + nTxt + '。' : '') +
+            '撤回后学生端立即不再显示，已关闭记录也会一并清除。',
+          okText: '确认撤回',
+          danger: true,
+        }).then(function (ok) {
+          if (!ok) return;
+          API.admin.noticeDelete(nid).then(function () {
+            UI.toast('提醒已撤回', 'warn', '撤回完成');
+            A.notices.render(d.getElementById('view'));
+          }).catch(UI.errToast);
+        });
+        return;
+      }
+
       /* ───── 题库 ───── */
 
       var qe = c('[data-qedit]');
@@ -2778,7 +2984,8 @@
 
   A.bindEvents = bindEvents;
   A.state = S;
-  A.KEYS = ['dashboard', 'students', 'members', 'pricing', 'units', 'urges', 'questions', 'logs', 'profile'];
+  A.KEYS = ['dashboard', 'students', 'members', 'pricing', 'units',
+    'notices', 'urges', 'questions', 'logs', 'profile'];
   A.openUrgeDialog = openUrgeDialog;
   A.openStudentDetail = openStudentDetail;
   A.openUnitEditor = openUnitEditor;

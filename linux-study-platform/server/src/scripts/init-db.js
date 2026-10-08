@@ -8,9 +8,11 @@
      npm run init-db -- --force            # 内容已存在时也重新导入（先清空 units）
 
    读取的 SQL 文件（位于项目根目录 db/）：
-     1. schema.sql         表结构（含 CREATE DATABASE / USE）
-     2. seed_accounts.sql  管理员 + 5 个学生账号
-     3. seed_content.sql   四级目录树 + 学习内容（约 1.5MB）
+     1. schema.sql               表结构（含 CREATE DATABASE / USE）
+     2. migrate_v2_member.sql    会员体系迁移（幂等）
+     3. migrate_v3_notice.sql    提醒功能迁移（幂等，notices / notice_dismiss）
+     4. seed_accounts.sql        管理员 + 5 个学生账号
+     5. seed_content.sql         四级目录树 + 学习内容（约 1.5MB）
    ══════════════════════════════════════════════════════════════════ */
 
    
@@ -28,6 +30,8 @@ const FILES = [
   { file: 'schema.sql', label: '表结构' },
   // 幂等迁移：为「已存在但结构较旧」的库补齐会员字段与新表（全新库执行也无副作用）
   { file: 'migrate_v2_member.sql', label: '会员体系迁移' },
+  // 幂等迁移：新增「提醒学生」相关表（notices / notice_dismiss）
+  { file: 'migrate_v3_notice.sql', label: '提醒功能迁移' },
   { file: 'seed_accounts.sql', label: '账号与定价' },
 ].concat(SKIP_CONTENT ? [] : [{ file: 'seed_content.sql', label: '学习内容' }]);
 

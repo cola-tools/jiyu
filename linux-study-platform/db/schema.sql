@@ -322,4 +322,35 @@ CREATE TABLE IF NOT EXISTS `export_logs` (
   CONSTRAINT `fk_exp_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='打卡记录导出流水';
 
+-- ─────────────────────────────────────────────────────────────────────────
+-- 7. 提醒（管理员 → 全体学生；学生端右上角面板展示，叉号关闭后不再显示）
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `notices` (
+  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `admin_id`     INT UNSIGNED NOT NULL,
+  `admin_name`   VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '发送者姓名快照（管理员改名不影响历史）',
+  `content`      TEXT         NOT NULL COMMENT '提醒内容',
+  `priority`     TINYINT      NOT NULL DEFAULT 1 COMMENT '1普通 2重要 3紧急',
+  `target_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发送时覆盖的学生数（快照）',
+  `revoked_at`   DATETIME     NULL COMMENT '撤回时刻；NULL＝有效提醒',
+  `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_notice_admin` (`admin_id`),
+  KEY `idx_notice_created` (`created_at`),
+  CONSTRAINT `fk_notice_admin` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员提醒';
+
+-- 提醒关闭记录：学生点叉号才写入；没有记录 ⇒ 每次登录都继续显示
+CREATE TABLE IF NOT EXISTS `notice_dismiss` (
+  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `notice_id`    BIGINT UNSIGNED NOT NULL,
+  `student_id`   INT UNSIGNED NOT NULL,
+  `dismissed_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '关闭时刻',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_notice_student` (`notice_id`, `student_id`),
+  KEY `idx_nd_student` (`student_id`),
+  CONSTRAINT `fk_nd_notice` FOREIGN KEY (`notice_id`) REFERENCES `notices` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_nd_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='提醒关闭记录';
+
 SET FOREIGN_KEY_CHECKS = 1;

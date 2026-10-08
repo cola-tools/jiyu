@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="css/member.css">
 <link rel="stylesheet" href="css/learn.css">
 <link rel="stylesheet" href="css/login.css">
+<link rel="stylesheet" href="css/notice.css">
 </head>
 <body>
 
@@ -135,6 +136,9 @@
     </div>
   </header>
 
+  <!-- 学生端：右上角提醒面板（只能由学生点 ✕ 关闭，绝不自动消失） -->
+  <div class="notice-dock" id="noticeDock" hidden aria-live="polite"></div>
+
   <div class="shell">
     <div class="scrim" id="scrim"></div>
     <aside class="sidebar" id="sidebar">
@@ -185,6 +189,7 @@
 <script src="js/store.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/member.js"></script>
+<script src="js/notice.js"></script>
 <script src="js/views/login.js"></script>
 <script src="js/views/student.js"></script>
 <script src="js/views/learn.js"></script>
