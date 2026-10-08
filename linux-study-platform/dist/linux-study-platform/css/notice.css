@@ -21,7 +21,9 @@
   position: fixed;
   top: calc(var(--top-h) + 10px);
   right: 16px;
-  z-index: 720;                 /* 高于顶栏、低于弹层 */
+  /* 高于顶栏(90) / 遮罩(95) / 侧栏(110)，低于普通弹层(400) 与会员门禁拦截层(900)，
+     否则弹窗会被提醒面板压住 */
+  z-index: 300;
   width: 340px;
   max-width: calc(100vw - 32px);
   display: flex;

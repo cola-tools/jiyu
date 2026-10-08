@@ -16,6 +16,13 @@
  *
  *   off              完全关闭短信发送（仅用于纯内网演示），此时 devCode 可用。
  *
+ * 验证码回显（前端「获取验证码」后直接显示在页面上，不经过短信）：
+ *   · 非生产环境                → 始终回显（本地联调 / 自动化测试依赖它）
+ *   · SMS_PROVIDER=off          → 始终回显（没有真实短信通道，页面必须能拿到码）
+ *   · SMS_PUBLIC_CODE=1         → 显式强制回显（⚠ 等于任何人都能拿到任意手机号的验证码，
+ *                                 注册 / 重置密码将完全失去防爆破能力，仅限内网演示）
+ *   · 其余情况（production + 真实短信通道）→ 不回显，验证码只走短信
+ *
  * 频率限制（防刷）：
  *   · 同一手机号 + 同一场景，60 秒内只能发送一次
  *   · 同一手机号每天最多 SMS_DAILY_LIMIT 条（默认 10）
@@ -35,6 +42,10 @@ const IS_PROD = String(process.env.NODE_ENV || '').toLowerCase() === 'production
 
 /** 开发环境固定验证码（便于自动化测试；生产环境忽略此变量） */
 const DEV_CODE = IS_PROD ? '' : String(process.env.SMS_DEV_CODE || '');
+
+/** 是否把验证码回传给前端（让页面直接显示，不经过短信） */
+const PUBLIC_CODE = /^(1|true|on|yes)$/i.test(String(process.env.SMS_PUBLIC_CODE || ''));
+const ECHO_CODE = !IS_PROD || PROVIDER === 'off' || PUBLIC_CODE;
 
 const SCENE_CN = { register: '注册账号', forgot: '重置密码' };
 
@@ -163,10 +174,12 @@ async function send(phone, scene, ip) {
   db.run('DELETE FROM sms_codes WHERE expire_at < DATE_SUB(NOW(), INTERVAL 1 DAY)').catch(() => {});
 
   const out = { cooldown: RESEND_GAP, expiresIn: TTL_SECONDS, provider: PROVIDER };
-  // 仅非生产环境回显，便于本地联调与自动化测试
-  if (!IS_PROD) {
+  // 把验证码回传给前端，页面在「获取验证码」后直接显示（不再依赖短信）
+  if (ECHO_CODE) {
     out.devCode = code;
-    out.devHint = '开发环境回显验证码；生产环境（NODE_ENV=production）不会返回。';
+    out.devHint = IS_PROD
+      ? '验证码已直接回传（SMS_PROVIDER=off 或 SMS_PUBLIC_CODE=1），请直接填入页面。'
+      : '开发环境回显验证码；生产环境（NODE_ENV=production）默认不返回。';
   }
   return out;
 }

@@ -15,6 +15,7 @@ const cors = require('cors');
 const db = require('./db');
 const auth = require('./auth');
 const member = require('./member');
+const autoMigrate = require('./auto-migrate');
 
 const app = express();
 app.disable('x-powered-by');
@@ -170,6 +171,8 @@ member.startMemberGc();   // 每分钟扫描会员到期 → 自动降级为普�
     try {
       await db.ping();
       console.log('✔ 数据库连接成功：' + (process.env.DB_NAME || 'linux_study'));
+      // 老库 + 新代码：自动补齐新增功能所需的表（幂等，失败不影响启动）
+      await autoMigrate.run();
     } catch (e) {
       n += 1;
       const wait = Math.min(30000, 1500 * Math.pow(2, n - 1));

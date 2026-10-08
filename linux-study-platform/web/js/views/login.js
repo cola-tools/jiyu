@@ -148,6 +148,7 @@
     var e = els();
     var phone = formEl ? String((formEl.querySelector('[name="phone"]') || {}).value || '').trim() : '';
     var capIn = formEl ? String((formEl.querySelector('[name="captcha"]') || {}).value || '').trim() : '';
+    var box = document.getElementById('devSmsBox'); if (box) box.style.display = 'none';
 
     if (!phone) { showErr('请输入手机号'); return; }
     if (!capIn) { showErr('请输入图形验证码中的字符'); return; }
@@ -159,9 +160,17 @@
     API.auth.sms(phone, scene, Login.cap.token, capIn).then(function (r) {
       restore();
       startSmsCountdown();
+
+      // 后端会把验证码一并回传（本地调试 / SMS_PROVIDER=off / SMS_PUBLIC_CODE=1），
+      // 先在 toast 里提示一次，9 秒后再在输入框下方常驻显示（不依赖真实短信）
       var dev = r && r.devCode ? String(r.devCode) : '';
-      var msg = '验证码已发送至 ' + phone + (dev ? '（开发环境验证码：' + dev + '）' : '');
-      UI.toast(msg, 'ok', '短信已发送', dev ? 8000 : 3000);
+      UI.toast(
+        dev ? '验证码已发送至 ' + phone + '（开发环境验证码：' + dev + '）'
+            : '验证码已发送至 ' + phone,
+        'ok', '短信已发送', 3000);
+
+      if (dev) setTimeout(function () { showDevCode(dev); }, 9000);
+
       // 短信发出后图形验证码作废，换一张
       refreshCaptcha(scene);
       if (formEl) {
@@ -250,7 +259,26 @@
           ' autocomplete="one-time-code" placeholder="6 位数字">' +
         '<button class="btn" id="smsBtn" type="button" data-scene="' + scene + '">获取验证码</button>' +
       '</span>' +
+      // 后端会把验证码一并回传（本地 / SMS_PROVIDER=off / SMS_PUBLIC_CODE=1），
+      // 点「获取验证码」9 秒后在这里常驻显示，无需真实短信
+      '<div class="dev-sms-box" id="devSmsBox" style="display:none">' +
+        '你的验证码：<b id="devSmsCode">------</b>，请注意查收！' +
+      '</div>' +
       '</div>';
+  }
+
+  /** 在「短信验证码」输入框下方显示后端回传的验证码；传空串则隐藏 */
+  function showDevCode(code) {
+    var box = d.getElementById('devSmsBox');
+    var codeEl = d.getElementById('devSmsCode');
+    if (!box || !codeEl) return;
+    var v = String(code || '').trim();
+    if (!v) { box.style.display = 'none'; return; }
+    codeEl.textContent = v;
+    box.style.display = 'block';
+    // 输入框还是空的就顺手代填，省得用户手抄；已填过则不覆盖
+    var input = d.querySelector('input[name="smsCode"]');
+    if (input && !input.value) input.value = v;
   }
 
   function loginFormHtml(r) {

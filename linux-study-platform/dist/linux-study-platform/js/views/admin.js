@@ -1448,7 +1448,17 @@
         host.innerHTML = html;
         bindNoticeForm(host);
       }).catch(function (e) {
-        host.innerHTML = U.errorBox(e.message,
+        var msg = String((e && e.message) || e);
+        var missing = /doesn't exist|does not exist|不存在/i.test(msg);
+        host.innerHTML = U.errorBox(
+          missing ? '后端数据库还没有「提醒」相关的表' : msg,
+          (missing
+            ? '<div class="small dim" style="margin-bottom:12px;line-height:1.9">' +
+                '技术原因：' + U.esc(msg) + '<br>' +
+                '处理办法：在后端数据库执行一次 <b>db/migrate_v3_notice.sql</b>（幂等脚本），' +
+                '或直接把后端升级到最新版本后重启 —— 新版本启动时会自动补齐这两张表。' +
+              '</div>'
+            : '') +
           '<button class="btn btn-primary" data-act="retry" type="button">重新加载</button>');
         var r = host.querySelector('[data-act="retry"]');
         if (r) r.addEventListener('click', function () { A.notices.render(host); });

@@ -395,6 +395,8 @@ CORS_ORIGINS=https://yourname.github.io,https://study.example.com
 | `TOKEN_TTL_HOURS` | 否     | 720         | 登录令牌有效期（小时），默认 30 天                          |
 | `SMS_PROVIDER`    | 否     | console     | `console` 响应里回显验证码 / `http` 接真实短信 / `off` 关闭 |
 | `SMS_DEBUG`       | 否     | 1           | `1` 时在响应与日志打印验证码，**生产务必改 0**                 |
+| `SMS_PUBLIC_CODE` | 否     | 0           | `1` = 生产环境也把验证码回传并显示在页面（⚠️ 等于不设防，仅内网演示）  |
+| `AUTO_MIGRATE`    | 否     | 1           | 启动时自动补齐新增功能所需的表（幂等，纯新增）；`0` 关闭            |
 
 > **从旧版本升级**：只需在 MySQL 里执行一次 `db/migrate_v2_member.sql`（幂等脚本，可重复执行），
 > 它会为 `students` 增加会员字段与手机号唯一约束，并新建会员相关 5 张表；执行完重启后端即可。
@@ -469,6 +471,15 @@ mysqldump -h 主机 -P 端口 -u 用户 -p 库名 > backup-$(date +%F).sql
 **⑥ 学生打卡后管理后台没刷新**
 → 后台面板数据在进入页面时拉取，点侧栏「刷新」或重新进入该页即可；未读督促徽标每 90 秒自动轮询。
 
+**⑥.5 页面报 `Table 'xxx.notices' doesn't exist`（提醒学生 / 加载失败）**
+→ **老库 + 新代码**：前端和后端都升级了，但数据库还是旧结构，缺 `notices` / `notice_dismiss`。
+  两个办法任选：
+  1. **重启后端**（推荐）——新版后端启动时会自己检查并补齐这两张表，日志里会打印
+     `→ 启动自检：提醒学生 (v3) 缺少 notices / notice_dismiss，正在自动建表…` 与 `✔ 已自动创建`；
+     Railway 上点 **Redeploy** 即可触发。
+  2. **手动执行迁移**：在后端数据库跑一次 `db/migrate_v3_notice.sql`（幂等脚本，可重复执行）。
+  > 想关掉启动自动补表：把环境变量 `AUTO_MIGRATE` 设为 `0`。
+
 **⑦ 手机上字体/按钮不是手绘风**
 → 手绘描边用 SVG 滤镜实现，个别老安卓 WebView 不支持时会自动降级为普通描边，属预期行为，不影响功能。
 
@@ -536,7 +547,6 @@ mysqldump -h 主机 -P 端口 -u 用户 -p 库名 > backup-$(date +%F).sql
 开通超级会员后，头像旁的「普通会员」会变成**金色「超级会员」**，全章节 🔒 消失。
 
 ### 14.4 注册 / 登录 / 忘记密码（全部在同一个登录窗内）
-
 **整站只有一个登录窗口**：登录页（身份网关）上只有「学生登录」「管理员登录」两个按钮，
 点哪个才弹出对应身份的登录窗；窗内是三个页签 —— **登录 / 注册账号 / 忘记密码**。
 管理员身份只开放「登录」（管理员账号由超级管理员在后台创建）。
@@ -553,6 +563,24 @@ mysqldump -h 主机 -P 端口 -u 用户 -p 库名 > backup-$(date +%F).sql
 
 > **接真实短信**：把 `SMS_PROVIDER` 改成 `http` 并配置你的短信服务商接口
 > （见 `server/src/sms.js` 顶部的 provider 说明），再把 `SMS_DEBUG` 改成 `0`。
+
+#### 不想接短信接口？验证码直接显示在页面上
+
+后端本来就自己生成 6 位随机码（`server/src/sms.js` 的 `randomCode()`），并把它随接口一起回传给前端，
+前端在**点「获取验证码」9 秒后**，于输入框下方显示「你的验证码：xxxxxx，请注意查收！」并自动代填，
+**注册 / 重置密码照常校验放行**。要让这套生效，按下面任选一种：
+
+| 场景                          | 做法                                                             |
+| --------------------------- | -------------------------------------------------------------- |
+| **纯内网 / 课堂演示**（推荐）      | 环境变量 `SMS_PROVIDER=off`。不发短信、不需要任何第三方服务，验证码必定回显 |
+| 线上环境也要显示                  | 环境变量 `SMS_PUBLIC_CODE=1`（⚠️ 见下方风险说明）                       |
+| 本地开发                        | 默认就会回显（`NODE_ENV` 不是 `production` 即可）                          |
+
+> ⚠️ **`SMS_PUBLIC_CODE=1` 的风险**：任何人都能拿到任意手机号的验证码，等于注册 / 重置密码完全不设防。
+> 仅限内网演示或临时演示使用；正式对外请接真实短信通道并让该变量保持关闭。
+>
+> 另外两条限流仍然生效：同号同场景 60 秒一条、同号每天 10 条、同 IP 每小时 20 条；验证码 5 分钟有效、一次性使用。
+> 别设 `SMS_DEV_CODE`——设了会用固定码代替随机码（那是给自动化测试用的）。
 
 ### 14.5 两平台融合说明（第七阶段）
 
@@ -588,6 +616,9 @@ mysqldump -h 主机 -P 端口 -u 用户 -p 库名 > backup-$(date +%F).sql
 
 数据表：`notices`（提醒主表）+ `notice_dismiss`（学生关闭记录，唯一键 `notice_id + student_id`）。
 接口：`POST/GET/DELETE /api/admin/notices`、`GET /api/my/notices`、`POST /api/my/notices/:id/dismiss`。
+
+> **升级老库**：后端启动时会自动检测并创建这两张表（`server/src/auto-migrate.js`，幂等，只新增不改动任何既有表）；
+> 也可以手动执行 `db/migrate_v3_notice.sql`。若页面报 `Table 'xxx.notices' doesn't exist`，看 12 节 ⑥.5。
 
 ### 14.7 本地验证（六套测试，共 469 项断言）
 
@@ -635,6 +666,7 @@ linux-study-platform/
 │   └── bridge.js            #   桥接层逻辑（注册登录 / 章节门禁 / 打卡与导出）
 ├── server/                  # 后端（部署到 Railway / 自建服务器）
 │   ├── src/index.js         #   Express 入口（/api + 融合平台静态托管 + LEGACY /learn）
+│   ├── src/auto-migrate.js  #   启动自检：自动补齐新增功能所需的表（幂等，AUTO_MIGRATE=0 可关）
 │   ├── src/member.js        #   会员核心：开通/叠加/到期降级/惰性判定
 │   ├── src/{auth,sms,captcha,exporter}.js
 │   ├── src/routes/          #   auth(注册登录验证码) / student / member / admin 四组 API

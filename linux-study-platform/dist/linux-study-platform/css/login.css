@@ -229,6 +229,31 @@ html[data-theme="dark"] .gate-title::after { opacity: .5; }
 .sms-wrap .input { flex: 1 1 auto; min-width: 0; }
 .sms-wrap .btn { flex: 0 0 auto; white-space: nowrap; }
 
+/* 后端回传的验证码提示框（点「获取验证码」9 秒后显示，只能由代码关闭） */
+.dev-sms-box {
+  margin-top: 9px;
+  padding: 9px 13px;
+  font-size: 13.5px; line-height: 1.6;
+  color: var(--ink);
+  background: var(--mark);
+  border: 2px dashed var(--warn);
+  border-radius: var(--r-chip);
+  filter: url(#rough-soft);
+  animation: devSmsIn .38s var(--ease) both;
+}
+.dev-sms-box b {
+  font-family: var(--font-num);
+  font-size: 19px; font-weight: 800;
+  letter-spacing: .16em;
+  color: var(--warn);
+  vertical-align: -1px;
+}
+@keyframes devSmsIn {
+  from { opacity: 0; transform: translateY(-6px) rotate(-.8deg); }
+  to   { opacity: 1; transform: none; }
+}
+html.no-rough .dev-sms-box { filter: none; }
+
 /* 注册页脚注 */
 .lgm-note {
   margin-top: 12px;

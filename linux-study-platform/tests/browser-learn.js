@@ -554,6 +554,20 @@ async function login(cdp) {
       !!devCode);
     await sleep(400);
 
+    /* 后端回传的验证码：9 秒后常驻显示在输入框下方，并自动代填 */
+    T.ok('获取验证码前提示框不显示',
+      await cdp.eval('(function(){var b=document.getElementById("devSmsBox");return !!b && b.style.display==="none";})()') === true);
+    await cdp.waitFor('(function(){var b=document.getElementById("devSmsBox");return !!b && b.style.display!=="none";})()',
+      15000, '9 秒后显示验证码提示框');
+    const devBox = await cdp.eval(
+      '(function(){var b=document.getElementById("devSmsBox"),c=document.getElementById("devSmsCode");' +
+      'return {text:b?b.textContent.replace(/\\s+/g," ").trim():"",code:c?c.textContent.trim():"",' +
+      'filled:(document.querySelector(\'#regForm [name="smsCode"]\')||{}).value||""};})()');
+    T.ok('9 秒后页面下方显示「你的验证码：xxxxxx，请注意查收！」：' + devBox.text,
+      /你的验证码：\d{6}，请注意查收！/.test(devBox.text));
+    T.eq('提示框里的验证码与下发的一致', devBox.code, devCode);
+    T.eq('验证码已自动代填进输入框', devBox.filled, devCode);
+
     const regCap2 = await currentCaptcha(cdp);
     await fillForm(cdp, 'regForm', { captcha: regCap2.answer, smsCode: devCode });
     await cdp.eval(CLEAR_TOASTS);
@@ -593,6 +607,9 @@ async function login(cdp) {
     const devCode2 = (String(smsToast2).match(DEV_CODE_RE) || [])[1];
     T.ok('重置密码短信已下发：' + devCode2, !!devCode2);
     await sleep(400);
+    T.ok('忘记密码页同样显示验证码提示框',
+      await cdp.waitFor('(function(){var b=document.getElementById("devSmsBox");return !!b && b.style.display!=="none";})()',
+        15000, '重置页 9 秒后显示').then(() => true).catch(() => false) === true);
 
     const fgCap2 = await currentCaptcha(cdp);
     await fillForm(cdp, 'forgotForm', { captcha: fgCap2.answer, smsCode: devCode2 });
