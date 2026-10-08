@@ -1,0 +1,309 @@
+/* ══════════════════════════════════════════════════════════════════
+   login.css · 单一登录窗口（身份网关 + 登录弹窗）
+   ──────────────────────────────────────────────────────────────────
+   登录页本身只放一张「手绘纸卡」：标题 + 两个身份按钮。
+   点击「学生登录 / 管理员登录」后弹出对应身份的登录窗（.lgm）。
+   全站手绘语言：不规则圆角 + 虚线描边 + feTurbulence 抖动 + 荧光笔/tape 装饰
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════ 1. 身份网关卡 ═══════════ */
+.login-gate {
+  position: relative;
+  width: 100%;
+  max-width: 470px;
+  padding: 34px 32px 24px;
+  background: var(--surface);
+  border-radius: var(--r-card);
+  box-shadow: 6px 8px 0 var(--stroke-soft);
+}
+.login-gate > * { position: relative; z-index: 1; }
+
+.login-gate.in { animation: gateIn .52s var(--ease) both; }
+@keyframes gateIn {
+  from { opacity: 0; transform: translateY(22px) rotate(-1deg) scale(.965); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* 纸胶带装饰 */
+.gate-tape {
+  position: absolute;
+  z-index: 3;
+  width: 104px; height: 27px;
+  border: 2px dashed var(--stroke-2);
+  border-radius: 4px 9px 5px 8px / 8px 5px 9px 4px;
+  filter: url(#rough-soft);
+  pointer-events: none;
+  opacity: .82;
+}
+.gate-tape-a { top: -13px; left: 30px;  background: var(--mark);   transform: rotate(-6.5deg); }
+.gate-tape-b { top: -13px; right: 34px; background: var(--mark-2); transform: rotate(7deg); }
+
+/* 页头 */
+.gate-head { text-align: center; margin-bottom: 20px; }
+.gate-logo {
+  font-size: 46px; line-height: 1;
+  display: inline-block;
+  animation: gateFloat 3.4s var(--ease) infinite;
+}
+@keyframes gateFloat {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50%      { transform: translateY(-9px) rotate(4deg); }
+}
+.gate-title {
+  margin: 12px 0 6px;
+  font-size: 26px; font-weight: 800; letter-spacing: .08em;
+  color: var(--ink);
+}
+.gate-title::after {
+  content: "";
+  display: block;
+  width: 172px; height: 9px;
+  margin: 7px auto 0;
+  background: var(--mark);
+  border-radius: 42% 58% 55% 45% / 62% 40% 60% 38%;
+  transform: rotate(-1.1deg);
+}
+html[data-theme="dark"] .gate-title::after { opacity: .5; }
+.gate-sub { margin: 0; font-size: 14.5px; color: var(--ink-3); line-height: 1.72; }
+
+/* 「选择身份」虚线分隔 */
+.gate-pick {
+  display: flex; align-items: center; gap: 12px;
+  margin: 4px 0 16px;
+}
+.gp-line {
+  flex: 1; height: 0;
+  border-top: 2px dashed var(--stroke-soft);
+}
+.gp-txt {
+  flex: 0 0 auto;
+  font-size: 13.5px; font-weight: 700; color: var(--ink-3);
+  letter-spacing: .04em;
+}
+
+/* 身份按钮 */
+.gate-roles { display: flex; flex-direction: column; gap: 14px; }
+.role-card {
+  position: relative;
+  display: flex; align-items: center; gap: 14px;
+  width: 100%;
+  padding: 15px 17px;
+  font-family: var(--font-ui);
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 2.5px solid var(--stroke);
+  border-radius: var(--r-btn);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.role-card:hover {
+  transform: translate(-3px, -3px) rotate(-.7deg);
+  box-shadow: var(--shadow-lg);
+  background: var(--surface-3);
+}
+.role-card:active { transform: translate(2px, 2px); box-shadow: var(--shadow-press); }
+.role-card:focus-visible { outline: 3px dashed var(--accent); outline-offset: 3px; }
+
+.rc-badge {
+  flex: 0 0 auto;
+  width: 46px; height: 46px;
+  display: grid; place-items: center;
+  font-size: 23px; line-height: 1;
+  background: var(--accent-soft);
+  border: 2.5px dashed var(--stroke);
+  border-radius: 58% 42% 47% 53% / 45% 52% 48% 55%;
+  transform: rotate(-3deg);
+}
+.rc-admin .rc-badge { background: var(--mark); transform: rotate(3deg); }
+
+.rc-main { flex: 1 1 auto; min-width: 0; display: block; }
+.rc-main b { display: block; font-size: 17.5px; font-weight: 800; letter-spacing: .04em; }
+.rc-main i {
+  display: block; margin-top: 3px;
+  font-style: normal; font-size: 12.8px; color: var(--ink-3); line-height: 1.5;
+}
+.rc-arrow {
+  flex: 0 0 auto;
+  font-size: 20px; font-weight: 700; color: var(--ink-3);
+  transition: transform var(--t-fast), color var(--t-fast);
+}
+.role-card:hover .rc-arrow { transform: translateX(4px); color: var(--accent); }
+
+/* 页脚 */
+.gate-foot {
+  margin-top: 20px; padding-top: 15px;
+  border-top: 2px dashed var(--stroke-soft);
+  font-size: 12.8px; color: var(--ink-3);
+  text-align: center; line-height: 1.85;
+}
+.gate-foot span { display: block; }
+.gate-foot .gate-vip b { color: var(--warn); }
+
+/* ═══════════ 2. 登录弹窗（.lgm） ═══════════ */
+.lgm { padding: 2px 0 0; }
+/* 注册 / 忘记密码字段较多，压紧行距保证一屏尽量装下 */
+.lgm .field { margin-bottom: 11px; }
+.lgm .field:last-of-type { margin-bottom: 14px; }
+.lgm .field-label { font-size: 13.5px; }
+
+.lgm-head {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 18px; padding-bottom: 15px;
+  border-bottom: 2px dashed var(--stroke-soft);
+}
+.lgm-ico {
+  flex: 0 0 auto;
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  font-size: 22px; line-height: 1;
+  background: var(--accent-soft);
+  border: 2.5px solid var(--stroke);
+  border-radius: 55% 45% 50% 50% / 48% 50% 50% 52%;
+  transform: rotate(-3deg);
+}
+.lgm-txt { flex: 1 1 auto; min-width: 0; }
+.lgm-txt b { display: block; font-size: 17.5px; font-weight: 800; letter-spacing: .05em; color: var(--ink); }
+.lgm-txt i { display: block; margin-top: 2px; font-style: normal; font-size: 12.8px; color: var(--ink-3); }
+
+/* 页签：登录 / 注册账号 / 忘记密码 */
+.lgm-tabs {
+  display: flex; gap: 6px;
+  padding: 5px;
+  margin-bottom: 16px;
+  background: var(--surface-2);
+  border: 2.5px solid var(--stroke-soft);
+  border-radius: var(--r-chip);
+}
+.ltab {
+  flex: 1 1 0;
+  padding: 7px 6px;
+  font-family: var(--font-ui);
+  font-size: 14.5px; font-weight: 700;
+  color: var(--ink-2);
+  background: transparent; border: 0;
+  border-radius: var(--r-chip);
+  cursor: pointer;
+  transition: var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+.ltab:hover { color: var(--ink); }
+.ltab.on {
+  background: var(--surface);
+  color: var(--ink);
+  border: 2.5px solid var(--stroke);
+  box-shadow: var(--shadow-press);
+  transform: rotate(-.5deg);
+}
+
+/* 字段标签内的补充说明 */
+.field-label .fh {
+  font-style: normal; font-weight: 400;
+  font-size: 12px; color: var(--ink-3);
+  margin-left: 4px;
+}
+
+/* 图形验证码行 */
+.cap-row { display: flex; align-items: center; gap: 8px; }
+.cap-img {
+  flex: 0 0 auto;
+  width: 108px; height: 42px;
+  display: grid; place-items: center;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 2.5px solid var(--stroke);
+  border-radius: var(--r-input);
+  cursor: pointer;
+  transition: var(--t-fast);
+}
+.cap-img:hover { transform: rotate(-1deg); }
+.cap-img svg { display: block; width: 100%; height: 100%; }
+.cap-ph { font-size: 12px; color: var(--ink-3); }
+.cap-row .input { flex: 1 1 auto; min-width: 0; }
+
+/* 短信验证码行 */
+.sms-wrap { display: flex; gap: 8px; }
+.sms-wrap .input { flex: 1 1 auto; min-width: 0; }
+.sms-wrap .btn { flex: 0 0 auto; white-space: nowrap; }
+
+/* 注册页脚注 */
+.lgm-note {
+  margin-top: 12px;
+  font-size: 12.5px; color: var(--ink-3); line-height: 1.7; text-align: center;
+}
+.lgm-note b { color: var(--warn); }
+
+/* 输入框容器（前置图标 + 后置眼睛） */
+.inp-wrap { position: relative; display: block; }
+.inp-wrap .input { padding-left: 40px; }
+.inp-wrap.has-eye .input { padding-right: 46px; }
+.inp-ico {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  font-size: 15px; line-height: 1; opacity: .78; pointer-events: none; z-index: 1;
+}
+.eye-btn {
+  position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  font-size: 14px; line-height: 1;
+  color: var(--ink-2);
+  background: transparent;
+  border: 2px solid var(--stroke-soft);
+  border-radius: 52% 48% 45% 55% / 50% 52% 48% 50%;
+  cursor: pointer;
+  transition: var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+.eye-btn:hover { background: var(--surface-2); border-color: var(--stroke); }
+
+/* 记住账号 / 大写锁定 */
+.lgm-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+.caps-hint {
+  font-size: 12.5px; font-weight: 700; color: var(--warn);
+  background: var(--warn-soft);
+  border: 2px dashed var(--warn);
+  border-radius: var(--r-chip);
+  padding: 2px 10px;
+}
+
+/* 窗内切换身份 */
+.lgm-switch {
+  display: block; width: 100%;
+  margin-top: 16px; padding-top: 13px;
+  border: 0; border-top: 2px dashed var(--stroke-soft);
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 14px; font-weight: 700; letter-spacing: .03em;
+  color: var(--accent);
+  text-align: center; cursor: pointer;
+  transition: var(--t-fast);
+}
+.lgm-switch:hover { color: var(--accent-2); }
+.lgm-switch:focus-visible { outline: 2px dashed var(--accent); outline-offset: 3px; }
+
+/* 错误条抖动（切换 hidden 后重放动画） */
+.login-err.shake { animation: shake .38s var(--ease); }
+
+/* ═══════════ 3. 响应式 ═══════════ */
+@media (max-width: 600px) {
+  .login-gate { padding: 28px 20px 20px; max-width: 100%; }
+  .gate-title { font-size: 22px; }
+  .gate-logo  { font-size: 40px; }
+  .role-card  { padding: 13px 14px; gap: 12px; }
+  .rc-badge   { width: 40px; height: 40px; font-size: 20px; }
+  .rc-main b  { font-size: 16.5px; }
+  .rc-main i  { font-size: 12px; }
+  .gate-tape-a { left: 18px; }
+  .gate-tape-b { right: 20px; }
+}
+@media (max-width: 380px) {
+  .role-card { padding: 12px; }
+  .rc-main i { display: none; }
+}

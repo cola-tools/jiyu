@@ -220,8 +220,16 @@
 
   /* ───────── 学生端 ───────── */
   API.student = {
-    /** 目录树 + 我的进度（含子孙累计、locked / isFree 门禁标记） */
-    tree: function () { return request('GET', '/tree', { query: { withProgress: 1 } }); },
+    /**
+     * 目录树 + 我的进度（含子孙累计、locked / isFree 门禁标记）
+     * @param {{maxLevel?:number}} [opts] maxLevel=3 只取「主目录 / 次目录 / 学习目录」索引，
+     *        用于课程学习 / 命令大全 / 实用技巧视图，响应体约为全量的 1/7。
+     */
+    tree: function (opts) {
+      var q = { withProgress: 1 };
+      if (opts && opts.maxLevel) q.maxLevel = opts.maxLevel;
+      return request('GET', '/tree', { query: q });
+    },
     /** 单元详情（自身 + 子节点 + 我的打卡状态） */
     unit: function (id) { return request('GET', '/units/' + encodeURIComponent(id)); },
     /** 批量打卡（超级会员） */

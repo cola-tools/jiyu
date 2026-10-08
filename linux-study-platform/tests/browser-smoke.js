@@ -328,12 +328,28 @@ async function fetchBaseline() {
       (await cdp.eval('document.querySelectorAll(".tip-acc").length')) === 0);
     ok('登录页无演示账号区块（#loginTip 已移除）',
       (await cdp.eval('!document.getElementById("loginTip")')));
-    ok('登录框保留账号与密码两个输入框',
+    /* 单一登录窗口：网关卡 + 两个身份按钮，点按钮才弹出登录窗 */
+    ok('登录页只有一张登录窗口（#loginGate）',
+      (await cdp.eval('document.querySelectorAll("#loginPage .login-gate").length')) === 1);
+    ok('未点按钮时不出现账号 / 密码输入框',
+      (await cdp.eval('!document.getElementById("loginUser")')));
+    ok('网关含「学生登录」「管理员登录」两个按钮',
+      (await cdp.eval('!!document.getElementById("btnStudentLogin")')) &&
+      (await cdp.eval('!!document.getElementById("btnAdminLogin")')));
+    ok('已移除旧的分段控件（.seg-btn 数量为 0）',
+      (await cdp.eval('document.querySelectorAll("#loginPage .seg-btn").length')) === 0);
+    await cdp.shot('01-login-light');
+
+    // 点「学生登录」弹出登录窗，再校验输入框
+    await cdp.eval('document.getElementById("btnStudentLogin").click()');
+    await cdp.waitFor('!!document.getElementById("loginUser")', 20000, '学生登录窗');
+    await sleep(260);
+    ok('登录窗保留账号与密码两个输入框',
       (await cdp.eval('!!document.getElementById("loginUser")')) &&
       (await cdp.eval('!!document.getElementById("loginPass")')));
     ok('前端不再内置账号密码（LoginView.DEMO 已移除）',
       (await cdp.eval('typeof LoginView.DEMO === "undefined"')));
-    await cdp.shot('01-login-light');
+    await cdp.shot('01b-login-window');
 
     /* ── 浅色主题：全部为浅底深字 ── */
     await cdp.eval('STORE.applyTheme("light", false)');
@@ -355,8 +371,9 @@ async function fetchBaseline() {
     await cdp.shot('02-login-dark');
 
     const darkBright = await cdp.eval(darkTextCheck([
-      '.login-head h1', '.login-head p', '.field-label', '.seg-btn', '.btn-primary',
-      '.login-tip', '.tip-foot', '.input', '.theme-fab',
+      '.gate-title', '.gate-sub', '.gp-txt', '.role-card', '.rc-main b', '.rc-main i',
+      '.gate-foot', '.gate-vip', '.field-label', '.btn-primary',
+      '.input', '.theme-fab', '.lgm-txt b', '.lgm-txt i', '.lgm-switch',
     ]));
     ok('登录页深色主题下文本均为亮色 ' + (darkBright.length ? JSON.stringify(darkBright) : '（全部通过）'), darkBright.length === 0);
 
@@ -382,7 +399,8 @@ async function fetchBaseline() {
     const sStats = await cdp.eval('document.querySelectorAll("#view .stat-card").length');
     ok('学生数据面板统计卡数量 ≥ 4（实际 ' + sStats + '）', sStats >= 4);
     ok('进度环已渲染', await cdp.eval('!!document.querySelector("#view .ring svg")'));
-    ok('侧边栏包含 6 个学生端菜单', (await cdp.eval('document.querySelectorAll("#nav .nav-item").length')) === 6);
+    const stuNavN = await cdp.eval('document.querySelectorAll("#nav .nav-item").length');
+    ok('侧边栏包含 9 个学生端菜单（学习 4 + 练习 3 + 互动 1 + 设置 1，实际 ' + stuNavN + '）', stuNavN === 9);
     await cdp.shot('03-student-dashboard-light');
 
     /* ═══ 3. 学习目录与打卡 ═══ */
@@ -504,10 +522,12 @@ async function fetchBaseline() {
     await cdp.waitFor('document.querySelectorAll(".ui-modal").length === 0', 4000, '退出弹层关闭动画结束');
     ok('退出后无残留弹层', true);
 
-    /* 切换为管理员并登录 */
-    await cdp.eval('document.querySelector(\'#loginPage .seg-btn[data-role="admin"]\').click()');
-    await sleep(220);
-    ok('切换角色后仍无自动填充按钮',
+    /* 点「管理员登录」弹出管理员登录窗 */
+    await cdp.eval('document.getElementById("btnAdminLogin").click()');
+    await cdp.waitFor('!!document.getElementById("loginUser")', 15000, '管理员登录窗');
+    await sleep(260);
+    ok('管理员登录窗已弹出', (await cdp.eval('document.querySelectorAll(".ui-modal").length')) > 0);
+    ok('切换身份后仍无自动填充按钮',
       (await cdp.eval('document.querySelectorAll(".tip-acc").length')) === 0);
     await cdp.eval(`(function(){
       document.getElementById('loginUser').value = 'admin';
@@ -765,8 +785,9 @@ async function fetchBaseline() {
     await cdp.waitFor('document.querySelectorAll(".ui-modal").length === 0', 4000, '退出弹层关闭动画结束');
     ok('退出后无残留弹层', true);
 
-    await cdp.eval('document.querySelector(\'#loginPage .seg-btn[data-role="student"]\').click()');
-    await sleep(220);
+    await cdp.eval('document.getElementById("btnStudentLogin").click()');
+    await cdp.waitFor('!!document.getElementById("loginUser")', 15000, '学生登录窗');
+    await sleep(260);
     await cdp.eval(`(function(){
       document.getElementById('loginUser').value = 'student1';
       document.getElementById('loginPass').value = 'xiaoran2026';

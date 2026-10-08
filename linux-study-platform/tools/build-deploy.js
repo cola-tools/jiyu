@@ -1,14 +1,19 @@
 'use strict';
 /* ══════════════════════════════════════════════════════════════════
-   build-deploy.js · 生成「jiyu 仓库」前端部署包
+   build-deploy.js · 生成「jiyu 仓库」前端部署包（融合后的单平台）
    ──────────────────────────────────────────────────────────────────
+   融合说明（第七阶段）：打卡平台与学习平台已合并为**一个平台**。
+   学习平台的课程 / 命令大全 / 实用技巧 / 注册 / 忘记密码全部并入
+   web/，登录页只剩一个身份网关 + 学生 / 管理员两个入口。
+   因此部署包**不再产出 learn/**，也不再生成「两个平台卡片」的门户页。
+
    仓库结构（用户的 GitHub 仓库根目录是 jiyu，本项目在其下）：
-     jiyu/linux-study-platform/index.html   ← 门户主页（本脚本生成）
-     jiyu/linux-study-platform/web/         ← 打卡平台（注入 LINUX_STUDY_API）
-     jiyu/linux-study-platform/learn/       ← 学习平台（注入 WB_API_BASE）
+     jiyu/linux-study-platform/index.html   ← 融合平台（唯一入口，本脚本生成）
+     jiyu/linux-study-platform/web/         ← 旧书签兼容：跳转到上一级
+     jiyu/linux-study-platform/css|js|assets
 
    用法：node tools/build-deploy.js [后端地址]
-     缺省后端地址取 server/.env 里注释或 DEFAULT_API。
+     缺省后端地址取 DEFAULT_API（可用 --no-api 打相对同源包）。
 
    产物：dist/linux-study-platform/  ← 整个文件夹上传/提交到 jiyu 仓库即可
    ══════════════════════════════════════════════════════════════════ */
@@ -17,11 +22,11 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const SRC_WEB = path.join(ROOT, 'web');
-const SRC_LEARN = path.join(ROOT, 'learn');
 const OUT = path.join(ROOT, 'dist', 'linux-study-platform');
 
 const DEFAULT_API = 'https://jiyu-production-3034.up.railway.app';
-const API = (process.argv[2] || DEFAULT_API).replace(/\/+$/, '');
+const arg = process.argv[2];
+const API = (arg === '--no-api' ? '' : (arg || DEFAULT_API)).replace(/\/+$/, '');
 
 let fail = 0;
 function check(name, cond, extra) {
@@ -48,185 +53,71 @@ function injectHead(html, varName, value, comment) {
   return out;
 }
 
-/* ═══ 门户主页模板 ═══ */
-function portalHtml() {
+/* 旧书签兼容页：/web/ → /（保留 hash 与查询串） */
+function legacyRedirectHtml() {
   return `<!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Linux 学习打卡平台 · 门户</title>
-<script>/* 部署注入：后端地址（仅用于服务状态检测） */
-window.LINUX_STUDY_API = ${JSON.stringify(API)};</script>
-<style>
-:root{
-  --bg:#050a16; --bg2:#0a1a35; --card:#0c1f3f; --line:#22406e;
-  --txt:#e8eefc; --dim:#8ba3c7; --acc:#5eb0ff; --ok:#34d399; --bad:#f87171;
-  --paper:#fdfbf5; --paper2:#f4efe2; --ptxt:#2a2a24; --pdim:#7a7466; --pline:#d8d2c0;
-}
-[data-theme="light"]{
-  --bg:var(--paper); --bg2:var(--paper2); --card:#fffdf6; --line:var(--pline);
-  --txt:var(--ptxt); --dim:var(--pdim); --acc:#1d6fd8;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100vh;display:flex;flex-direction:column;align-items:center;
-  background:
-    radial-gradient(1000px 500px at 80% -10%, rgba(94,176,255,.12) 0%, transparent 60%),
-    var(--bg);
-  color:var(--txt);font:15px/1.75 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
-  padding:34px 18px;transition:background .3s,color .3s}
-.wrap{width:100%;max-width:860px}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}
-.brand{display:flex;align-items:center;gap:12px}
-.brand .lg{font-size:38px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
-.brand h1{font-size:21px;letter-spacing:.5px}
-.brand p{font-size:12px;color:var(--dim)}
-#themeBtn{border:1px solid var(--line);background:var(--card);color:var(--txt);
-  border-radius:999px;padding:8px 16px;cursor:pointer;font-size:13px}
-#themeBtn:hover{transform:translateY(-1px)}
-/* 后端状态 */
-.status{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);
-  border-radius:14px;background:var(--card);padding:12px 18px;margin-bottom:26px;
-  box-shadow:3px 4px 0 rgba(0,0,0,.18)}
-[data-theme="light"] .status{box-shadow:3px 4px 0 rgba(0,0,0,.06)}
-.status .dot{width:10px;height:10px;border-radius:50%;background:#9aa7bd;flex:none}
-.status.ok .dot{background:var(--ok);box-shadow:0 0 10px var(--ok)}
-.status.bad .dot{background:var(--bad);box-shadow:0 0 10px var(--bad)}
-.status b{font-size:14px}
-.status span{font-size:12px;color:var(--dim)}
-.status button{margin-left:auto;border:1px solid var(--line);background:none;color:var(--acc);
-  border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px}
-/* 平台卡片 */
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-@media (max-width:640px){.grid{grid-template-columns:1fr}}
-a.card2{display:block;text-decoration:none;color:var(--txt);background:var(--card);
-  border:2px solid var(--line);border-radius:18px;padding:26px 24px 22px;
-  box-shadow:5px 6px 0 rgba(0,0,0,.22);transition:transform .15s,box-shadow .15s}
-[data-theme="light"] a.card2{box-shadow:5px 6px 0 rgba(0,0,0,.07)}
-a.card2:hover{transform:translate(-2px,-3px);box-shadow:8px 10px 0 rgba(0,0,0,.25)}
-.card2 .ico{font-size:40px}
-.card2 h2{font-size:18px;margin:10px 0 4px}
-.card2 p{font-size:13px;color:var(--dim);line-height:1.8}
-.card2 .go{display:inline-block;margin-top:14px;font-size:13px;color:var(--acc);font-weight:600}
-footer{margin-top:30px;text-align:center;font-size:12px;color:var(--dim)}
-footer b{color:var(--txt)}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="lg">🐧</div>
-      <div><h1>Linux 学习打卡平台</h1><p>学习平台 · 打卡平台 · 统一账号与会员体系</p></div>
-    </div>
-    <button id="themeBtn" type="button">☀️ 浅色</button>
-  </header>
-
-  <div class="status" id="st">
-    <span class="dot"></span>
-    <div><b id="stTitle">正在检测后端服务…</b><br><span id="stDesc">后端：${API}</span></div>
-    <button type="button" id="stRetry">重新检测</button>
-  </div>
-
-  <div class="grid">
-    <a class="card2" href="learn/">
-      <div class="ico">📖</div>
-      <h2>学习平台</h2>
-      <p>Linux 教程 / 命令大全 / 实用技巧。<br>注册账号后默认普通会员，可学第一章；<br>开通超级会员解锁全部章节与打卡。</p>
-      <span class="go">进入学习 →</span>
-    </a>
-    <a class="card2" href="web/">
-      <div class="ico">📝</div>
-      <h2>打卡平台</h2>
-      <p>学习打卡 / 进度跟踪 / 专业出题练习。<br>仅对超级会员开放，支持导出打卡记录；<br>与学生端、管理后台共用一套账号。</p>
-      <span class="go">进入打卡 →</span>
-    </a>
-  </div>
-
-  <footer>普通会员 ¥0 · 周会员 ¥4 · 月会员 ¥12 · 年会员 ¥24 · 永久会员 ¥59.9<br>
-  开通 / 续费请联系管理员 · <b>admin</b> 可在打卡平台登录管理后台</footer>
-</div>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Linux 学习打卡平台</title>
 <script>
 (function () {
-  /* 主题（与学习平台共用同一个存储键，切一边两边同步） */
-  var KEY = 'wb.theme';
-  var btn = document.getElementById('themeBtn');
-  function apply(t) {
-    if (t !== 'light' && t !== 'dark') t = 'dark';
-    document.documentElement.setAttribute('data-theme', t);
-    try { localStorage.setItem(KEY, t); } catch (e) {}
-    btn.textContent = t === 'light' ? '🌙 深色' : '☀️ 浅色';
-  }
-  apply((function(){ try { return localStorage.getItem(KEY); } catch (e) { return null; } })());
-  btn.addEventListener('click', function () {
-    apply(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
-  });
-
-  /* 后端状态检测 */
-  var box = document.getElementById('st');
-  var t1 = document.getElementById('stTitle');
-  function probe() {
-    box.className = 'status'; t1.textContent = '正在检测后端服务…';
-    var base = (typeof window.LINUX_STUDY_API === 'string') ? window.LINUX_STUDY_API : '';
-    fetch(base + '/api/health', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
-      if (d && d.db === false) {
-        box.className = 'status bad';
-        t1.textContent = '后端已连接，但数据库暂未就绪（服务会自动重连，请稍后重试）';
-      } else {
-        box.className = 'status ok';
-        t1.textContent = '后端服务运行正常';
-      }
-    }).catch(function () {
-      box.className = 'status bad';
-      t1.textContent = '后端暂不可达（可能是网络波动或服务维护中），功能暂不可用';
-    });
-  }
-  document.getElementById('stRetry').addEventListener('click', probe);
-  probe();
+  var to = '../' + (location.search || '') + (location.hash || '');
+  location.replace(to);
 })();
 </script>
-</body></html>`;
+<style>body{font:15px/1.8 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  display:grid;place-items:center;min-height:100vh;margin:0;background:#fdfbf5;color:#1f2430}
+a{color:#2b5d8f}</style>
+</head>
+<body>
+  <p>正在进入平台… 如果没有自动跳转，请点 <a href="../">这里</a>。</p>
+</body>
+</html>`;
 }
 
 /* ═══ 主流程 ═══ */
-console.log('后端地址：' + API);
+console.log('后端地址：' + (API || '（同源 / 未注入）'));
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
 
-/* 1. web / learn 拷贝 + 注入 */
-copyDir(SRC_WEB, path.join(OUT, 'web'));
-copyDir(SRC_LEARN, path.join(OUT, 'learn'));
-const webIdx = path.join(OUT, 'web', 'index.html');
-const learnIdx = path.join(OUT, 'learn', 'index.html');
-fs.writeFileSync(webIdx, injectHead(fs.readFileSync(webIdx, 'utf8'),
-  'window.LINUX_STUDY_API', API, '部署注入：打卡平台后端地址（置空 \x27\x27 回退同源）'));
-fs.writeFileSync(learnIdx, injectHead(fs.readFileSync(learnIdx, 'utf8'),
-  'window.WB_API_BASE', API, '部署注入：学习平台后端地址（与后端不同源时必须指定）'));
+/* 1. 融合平台 → 部署根目录（唯一入口） */
+copyDir(SRC_WEB, OUT);
+const idx = path.join(OUT, 'index.html');
+fs.writeFileSync(idx, injectHead(fs.readFileSync(idx, 'utf8'),
+  'window.LINUX_STUDY_API', API, '部署注入：后端地址（置空 \x27\x27 回退同源）'));
 
-/* 2. 门户主页 */
-fs.writeFileSync(path.join(OUT, 'index.html'), portalHtml());
+/* 2. 旧书签兼容：/web/ → / */
+fs.mkdirSync(path.join(OUT, 'web'), { recursive: true });
+fs.writeFileSync(path.join(OUT, 'web', 'index.html'), legacyRedirectHtml());
 
 /* 3. 自检 */
 console.log('\n自检：');
-const w = fs.readFileSync(webIdx, 'utf8');
-const l = fs.readFileSync(learnIdx, 'utf8');
-const p = fs.readFileSync(path.join(OUT, 'index.html'), 'utf8');
-check('打卡平台已注入 LINUX_STUDY_API', w.includes('window.LINUX_STUDY_API'));
-check('学习平台已注入 WB_API_BASE（且在 bridge.js 之前）',
-  l.indexOf('WB_API_BASE') < l.indexOf('bridge.js'));
-check('门户主页已生成且含状态检测', p.includes('/api/health'));
-check('打卡平台无绝对 /learn/ 链接（应为相对路径）', !/href="\/learn/.test(w) && !/open\('\/learn/.test(
-  fs.readFileSync(path.join(OUT, 'web', 'js', 'app.js'), 'utf8')));
-check('学习平台验证码走 POST（与后端路由一致）', /req\('POST',\s*'\/api\/auth\/captcha'/.test(
-  fs.readFileSync(path.join(OUT, 'learn', 'bridge.js'), 'utf8')));
-check('打卡平台验证码走 POST（与后端路由一致）', /request\('POST',\s*'\/auth\/captcha'/.test(
-  fs.readFileSync(path.join(OUT, 'web', 'js', 'api.js'), 'utf8')));
+const w = fs.readFileSync(idx, 'utf8');
+const wApp = fs.readFileSync(path.join(OUT, 'js', 'app.js'), 'utf8');
+const wLogin = fs.readFileSync(path.join(OUT, 'js', 'views', 'login.js'), 'utf8');
+
+check('融合平台已注入 LINUX_STUDY_API', w.includes('window.LINUX_STUDY_API'));
+check('产物中不再包含 learn/ 目录', !fs.existsSync(path.join(OUT, 'learn')));
+check('部署根目录就是融合平台（含 #loginGate 单一登录窗口）', w.includes('id="loginGate"'));
+check('单一登录窗口含「学生登录」「管理员登录」两个入口',
+  w.includes('id="btnStudentLogin"') && w.includes('id="btnAdminLogin"'));
+check('学习平台功能已并入（课程 / 命令大全 / 实用技巧视图）',
+  fs.existsSync(path.join(OUT, 'js', 'views', 'learn.js')) &&
+  fs.existsSync(path.join(OUT, 'css', 'learn.css')));
+check('登录窗含注册 / 忘记密码页签（自助入口已并入）',
+  /regForm|注册账号/.test(wLogin) && /forgotForm|忘记密码/.test(wLogin));
+check('页面内无 ../learn/ 外链残留',
+  !/\.\.\/learn\//.test(w) && !/\.\.\/learn\//.test(wApp));
+check('验证码接口走 POST（与后端路由一致）',
+  /request\('POST',\s*'\/auth\/captcha'/.test(fs.readFileSync(path.join(OUT, 'js', 'api.js'), 'utf8')));
 
 const du = (d) => fs.readdirSync(d).length + ' 项';
 console.log('\n产物：' + OUT);
-console.log('  index.html（门户主页）');
-console.log('  web/   ' + du(path.join(OUT, 'web')));
-console.log('  learn/ ' + du(path.join(OUT, 'learn')));
+console.log('  index.html（融合平台 · 唯一入口）');
+console.log('  web/index.html（旧书签跳转页）');
+console.log('  css/ ' + du(path.join(OUT, 'css')) + '   js/ ' + du(path.join(OUT, 'js')));
 
 if (fail) {
   console.error('\n✖ 自检未通过 ' + fail + ' 项，请修复后重试');

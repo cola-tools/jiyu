@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/member.css">
 <link rel="stylesheet" href="css/learn.css">
+<link rel="stylesheet" href="css/login.css">
 </head>
 <body>
 
@@ -45,39 +46,47 @@
     <span class="theme-ico"></span>
   </button>
 
-  <div class="login-card sketch">
-    <div class="login-head">
-      <div class="login-logo">📚</div>
-      <h1>Linux 学习打卡平台</h1>
-      <p>边学边打卡 · 老师看得见你的每一点进步</p>
+  <!-- 单一登录窗口：网关卡（只做身份选择），点下方按钮才弹出对应的登录窗 -->
+  <div class="login-gate sketch" id="loginGate">
+    <span class="gate-tape gate-tape-a" aria-hidden="true"></span>
+    <span class="gate-tape gate-tape-b" aria-hidden="true"></span>
+
+    <div class="gate-head">
+      <div class="gate-logo">📚</div>
+      <h1 class="gate-title">Linux 学习打卡平台</h1>
+      <p class="gate-sub">边学边打卡 · 老师看得见你的每一点进步</p>
     </div>
 
-    <div class="seg" role="tablist">
-      <button class="seg-btn on" data-role="student" type="button">🙋 学生登录</button>
-      <button class="seg-btn" data-role="admin" type="button">🧑‍🏫 管理员登录</button>
+    <div class="gate-pick">
+      <span class="gp-line"></span>
+      <span class="gp-txt">选择身份，开始今天的学习</span>
+      <span class="gp-line"></span>
     </div>
 
-    <form id="loginForm" autocomplete="on" novalidate>
-      <label class="field">
-        <span class="field-label">账号</span>
-        <input id="loginUser" name="username" type="text" autocomplete="username"
-               placeholder="请输入账号" required>
-      </label>
-      <label class="field">
-        <span class="field-label">密码</span>
-        <input id="loginPass" name="password" type="password" autocomplete="current-password"
-               placeholder="请输入密码" required>
-      </label>
-      <label class="checkline"><input type="checkbox" id="loginRemember" checked> <span>记住账号</span></label>
-      <div class="login-err" id="loginErr" hidden></div>
-      <button class="btn btn-primary btn-lg btn-block" id="loginBtn" type="submit">进入学习</button>
-    </form>
-  </div>
+    <div class="gate-roles">
+      <button class="role-card" id="btnStudentLogin" type="button" data-role="student">
+        <span class="rc-badge">🙋</span>
+        <span class="rc-main">
+          <b>学生登录</b>
+          <i>课程学习 · 命令大全 · 每日打卡</i>
+        </span>
+        <span class="rc-arrow">→</span>
+      </button>
+      <button class="role-card rc-admin" id="btnAdminLogin" type="button" data-role="admin">
+        <span class="rc-badge">🧑‍🏫</span>
+        <span class="rc-main">
+          <b>管理员登录</b>
+          <i>学生管理 · 督促提醒 · 练习出题</i>
+        </span>
+        <span class="rc-arrow">→</span>
+      </button>
+    </div>
 
-  <div class="login-foot">
-    <span>数据存储于 MySQL · 支持手机 / 平板 / Windows / macOS</span>
-    <span style="margin-top:8px;display:block">教程 · 命令大全 · 实用技巧 · 学习打卡，一个账号全部搞定</span>
-    <span style="margin-top:8px;display:block">平台仅向<b>超级会员</b>开放，普通会员请联系管理员开通</span>
+    <div class="gate-foot">
+      <span>教程 · 命令大全 · 实用技巧 · 学习打卡，一个账号全部搞定</span>
+      <span>数据存储于 MySQL · 支持手机 / 平板 / Windows / macOS</span>
+      <span class="gate-vip">平台仅向<b>超级会员</b>开放，普通会员请联系管理员开通</span>
+    </div>
   </div>
 </div>
 

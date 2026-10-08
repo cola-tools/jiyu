@@ -11,10 +11,92 @@
    可选环境变量：BASE / CHROME / SHOTS / CDP_PORT
    ══════════════════════════════════════════════════════════════════ */
 
-const { T, launch, sleep, sel, LAST_TOAST, LAST_M, LAST_M_CLICK } = require('./lib/cdp');
+const path = require('path');
+const mysql = require(path.join(__dirname, '..', 'server', 'node_modules', 'mysql2', 'promise'));
+const {
+  T, launch, sleep, sel, LAST_TOAST, LAST_M, LAST_M_CLICK,
+  CLICK_ROLE, SUBMIT_LOGIN, openLogin,
+} = require('./lib/cdp');
 
 const BASE = process.env.BASE || 'http://127.0.0.1:3210';
 const STUDENT = { u: 'student1', p: 'xiaoran2026' };
+const DB = {
+  host: process.env.DB_HOST || '127.0.0.1',
+  port: Number(process.env.DB_PORT || 3399),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'linux_study',
+  dateStrings: true,
+};
+
+/** 测试用注册账号（§10 注册 / 忘记密码） */
+const REG = {
+  username: 'e2e' + Date.now().toString().slice(-6),
+  password: 'e2e@2026abc',
+  newPassword: 'e2e@2026xyz',
+  phone: '137' + String(Date.now()).slice(-8),
+};
+
+let conn = null;
+
+/** 从 DOM 读取当前图形验证码 token，再从库里取回答案 */
+async function currentCaptcha(cdp) {
+  let tok = '';
+  for (let i = 0; i < 30 && !tok; i++) {
+    tok = await cdp.eval(
+      '(function(){var b=document.getElementById("capImg");return b?(b.getAttribute("data-token")||""):"";})()');
+    if (!tok) await sleep(150);
+  }
+  let ans = null;
+  for (let i = 0; i < 20 && !ans; i++) {
+    const [rows] = await conn.execute('SELECT answer FROM captcha_codes WHERE token = ?', [tok]);
+    ans = rows[0] ? rows[0].answer : null;
+    if (!ans) await sleep(120);
+  }
+  return { token: tok, answer: ans };
+}
+
+/** 填指定表单的字段（含 input/change 事件） */
+async function fillForm(cdp, formId, fields) {
+  return cdp.eval(`(function(){
+    var f = document.getElementById(${JSON.stringify(formId)});
+    if (!f) return false;
+    var vals = ${JSON.stringify(fields)};
+    Object.keys(vals).forEach(function (k) {
+      var el = f.querySelector('[name="' + k + '"]');
+      if (!el) return;
+      el.value = vals[k];
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    return true;
+  })()`);
+}
+
+async function submitForm(cdp, formId) {
+  return cdp.eval(`(function(){
+    var f = document.getElementById(${JSON.stringify(formId)});
+    if (!f) return false;
+    f.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    return true;
+  })()`);
+}
+
+/** 从「…开发环境验证码：123456」里取出 6 位验证码
+    （注意不能直接 match 第一个 6 位数字——手机号前缀也可能是 6 位） */
+const DEV_CODE_RE = /开发环境验证码[：:]\s*(\d{6})/;
+
+/** 等待 toast 出现并匹配正则；返回 toast 文本 */
+async function waitToast(cdp, re, timeout, label) {
+  const t0 = Date.now();
+  let last = '';
+  while (Date.now() - t0 < (timeout || 20000)) {
+    last = String(await cdp.eval(LAST_TOAST) || '');
+    if (re.test(last)) return last;
+    await sleep(200);
+  }
+  return '(超时) ' + last + ' @' + (label || '');
+}
 
 /* ───────── 小工具 ───────── */
 
@@ -51,18 +133,16 @@ async function gotoView(cdp, key, expectRe) {
 
 async function login(cdp) {
   await cdp.waitFor('document.getElementById("loginPage") && !document.getElementById("loginPage").hidden', 25000, '登录页可见');
-  await cdp.eval(
-    '(function(){' +
-    'document.getElementById("loginUser").value=' + JSON.stringify(STUDENT.u) + ';' +
-    'document.getElementById("loginPass").value=' + JSON.stringify(STUDENT.p) + ';' +
-    'document.getElementById("loginForm").dispatchEvent(new Event("submit",{cancelable:true,bubbles:true}));' +
-    '})()');
+  await cdp.waitFor('!!document.getElementById("btnStudentLogin")', 20000, '身份网关已渲染');
+  await openLogin(cdp, 'student');
+  await cdp.eval(SUBMIT_LOGIN(STUDENT.u, STUDENT.p));
   await cdp.waitFor('document.getElementById("app") && !document.getElementById("app").hidden', 30000, '进入主应用');
   await cdp.waitFor(sel('#nav .nav-item'), 15000, '导航渲染');
   await sleep(500);
 }
 
 (async () => {
+  try { conn = await mysql.createConnection(DB); } catch (e) { conn = null; }
   const { cdp, close } = await launch({ port: Number(process.env.CDP_PORT || 9337) });
 
   /* 采集页面脚本异常 / console.error —— 融合后任何一处引用错误都会在这里暴露 */
@@ -99,9 +179,58 @@ async function login(cdp) {
       '(function(){var s=false;document.querySelectorAll("link[rel=stylesheet]").forEach(function(x){' +
       'if((x.getAttribute("href")||"").indexOf("learn.css")>=0)s=true;});return s;})()'));
 
+    /* ── 单一登录窗口：一张网关卡 + 两个身份按钮，点按钮才弹出对应登录窗 ── */
+    T.ok('登录页只有一张登录窗口（#loginGate）',
+      await cdp.eval('document.querySelectorAll("#loginPage .login-gate").length===1'));
+    T.ok('未点按钮时不出现账号 / 密码输入框',
+      await cdp.eval('!document.getElementById("loginUser")'));
+    T.ok('网关含「学生登录」按钮', await cdp.eval('!!document.getElementById("btnStudentLogin")'));
+    T.ok('网关含「管理员登录」按钮', await cdp.eval('!!document.getElementById("btnAdminLogin")'));
+    const roleTxt = await cdp.eval(
+      '(function(){var a=[];document.querySelectorAll("#loginGate .role-card").forEach(function(b){' +
+      'a.push(b.textContent.replace(/\\s+/g," ").trim());});return a;})()');
+    T.ok('身份按钮文案：' + JSON.stringify(roleTxt),
+      /学生登录/.test(roleTxt[0] || '') && /管理员登录/.test(roleTxt[1] || ''));
+    T.ok('已移除旧的 seg 分段控件',
+      await cdp.eval('document.querySelectorAll("#loginPage .seg-btn").length===0'));
+
+    const modalTitle = '(function(){var m=document.querySelectorAll(".ui-modal");' +
+      'return m.length?m[m.length-1].querySelector(".modal-head h3").textContent.trim():"(无弹窗)";})()';
+
+    await openLogin(cdp, 'student');
+    T.ok('点击「学生登录」弹出登录窗', await cdp.eval('document.querySelectorAll(".ui-modal").length>0'));
+    T.ok('登录窗含账号 / 密码 / 提交按钮', await cdp.eval(
+      '!!(document.getElementById("loginUser")&&document.getElementById("loginPass")&&document.getElementById("loginBtn"))'));
+    T.eq('学生登录窗标题', await cdp.eval(modalTitle), '学生登录');
+    T.eq('学生登录窗按钮文案', await cdp.eval(
+      '(function(){var b=document.getElementById("loginBtn");return b?b.textContent.trim():"";})()'), '进入学习');
+    T.ok('登录窗含「记住账号」', await cdp.eval('!!document.getElementById("loginRemember")'));
+    T.ok('登录窗含密码明文切换按钮', await cdp.eval('!!document.getElementById("loginEye")'));
+    await cdp.shot('L0-login-window');
+
+    await cdp.eval(CLOSE_TOP_MODAL);
+    await sleep(450);
+    T.ok('登录窗可关闭', await cdp.eval('document.querySelectorAll(".ui-modal").length===0'));
+
+    await openLogin(cdp, 'admin');
+    T.eq('点击「管理员登录」弹出管理员窗', await cdp.eval(modalTitle), '管理员登录');
+    T.eq('管理员登录窗按钮文案', await cdp.eval(
+      '(function(){var b=document.getElementById("loginBtn");return b?b.textContent.trim():"";})()'), '进入管理后台');
+
+    // 窗内「换个身份」
+    await cdp.eval(
+      '(function(){var b=document.getElementById("loginSwitch");if(!b)return false;b.click();return true;})()');
+    await sleep(600);
+    T.eq('窗内「换个身份」切回学生登录', await cdp.eval(modalTitle), '学生登录');
+
+    await cdp.eval(CLOSE_TOP_MODAL);
+    await sleep(450);
+
     await login(cdp);
     T.ok('student1（永久会员）登录成功', await cdp.eval(
       '!!document.getElementById("app") && !document.getElementById("app").hidden'));
+    T.ok('登录成功后登录窗已关闭（不遮挡主界面）',
+      await cdp.eval('document.querySelectorAll(".ui-modal").length===0'));
 
     // headless Chrome 默认深色偏好，先固定为浅色，保证截图命名与实际一致
     await cdp.eval(setTheme('light'));
@@ -381,9 +510,122 @@ async function login(cdp) {
     await cdp.resize(1440, 900);
     await sleep(500);
 
-    /* ══════════ 9. 控制台异常 ══════════ */
-    T.section('9. 页面异常检查');
-    const real = pageErrors.filter(function (x) { return !/favicon|404/i.test(x); });
+    /* ══════════ 9. 登录窗内的注册 / 忘记密码 ══════════ */
+    T.section('9. 同一登录窗内的「注册账号 / 忘记密码」自助入口');
+
+    // 退出登录 → 回到身份网关
+    await cdp.eval('document.getElementById("userBtn").click()');
+    await sleep(260);
+    await cdp.eval('document.querySelector(\'#userPop [data-act="logout"]\').click()');
+    await cdp.waitFor('.ui-modal [data-act="yes"]', 15000, '退出确认');
+    await cdp.eval(LAST_M_CLICK('[data-act="yes"]'));
+    await cdp.waitFor('document.getElementById("loginPage") && !document.getElementById("loginPage").hidden', 20000, '回到登录页');
+    await cdp.waitFor('document.querySelectorAll(".ui-modal").length === 0', 6000, '弹层关闭');
+    T.ok('退出后回到唯一登录窗口', await cdp.eval('!!document.getElementById("btnStudentLogin")'));
+
+    await openLogin(cdp, 'student');
+    const tabs = await cdp.eval(
+      '(function(){var a=[];document.querySelectorAll(".lgm-tabs .ltab").forEach(function(b){a.push(b.dataset.tab);});return a;})()');
+    T.eq('登录窗内三个页签', JSON.stringify(tabs), JSON.stringify(['login', 'register', 'forgot']));
+
+    await cdp.eval('document.querySelector(\'.lgm-tabs .ltab[data-tab="register"]\').click()');
+    await cdp.waitFor('!!document.getElementById("regForm")', 15000, '注册表单');
+    await sleep(300);
+    const regFields = await cdp.eval(
+      '(function(){var a=[];document.querySelectorAll("#regForm [name]").forEach(function(n){a.push(n.name);});return a.join(",");})()');
+    T.ok('注册表单字段齐全：' + regFields,
+      ['username', 'password', 'password2', 'phone', 'smsCode', 'captcha'].every(function (k) {
+        return regFields.indexOf(k) >= 0;
+      }));
+    T.ok('注册表单含图形验证码图片', await cdp.eval('!!document.querySelector("#capImg svg")'));
+
+    const regCap1 = await currentCaptcha(cdp);
+    T.ok('图形验证码已生成且可在服务端核验', !!regCap1.token && !!regCap1.answer);
+
+    await fillForm(cdp, 'regForm', {
+      username: REG.username, password: REG.password, password2: REG.password,
+      phone: REG.phone, captcha: regCap1.answer,
+    });
+    await cdp.eval(CLEAR_TOASTS);
+    await cdp.eval('document.getElementById("smsBtn").click()');
+    const smsToast = await waitToast(cdp, /开发环境验证码/, 20000, '短信下发');
+    const devCode = (String(smsToast).match(DEV_CODE_RE) || [])[1];
+    T.ok('短信验证码已下发并回显开发验证码：' + devCode + '（toast：' + String(smsToast).slice(0, 46) + '）',
+      !!devCode);
+    await sleep(400);
+
+    const regCap2 = await currentCaptcha(cdp);
+    await fillForm(cdp, 'regForm', { captcha: regCap2.answer, smsCode: devCode });
+    await cdp.eval(CLEAR_TOASTS);
+    await submitForm(cdp, 'regForm');
+    const regToast = await waitToast(cdp, /注册成功|失败|不正确|已过期|已被/, 25000, '注册提交');
+    T.ok('注册成功提示：' + String(regToast).slice(0, 30), /注册成功/.test(regToast));
+    await sleep(500);
+    T.ok('注册后自动回到「登录」页签', await cdp.eval('!!document.getElementById("loginForm")'));
+    T.eq('注册后用户名已预填到登录框',
+      await cdp.eval('(function(){var u=document.getElementById("loginUser");return u?u.value:"";})()'), REG.username);
+
+    /* 普通会员登录打卡平台 → 窗内逐字拒绝文案 */
+    await fillForm(cdp, 'loginForm', { password: REG.password });
+    await submitForm(cdp, 'loginForm');
+    await cdp.waitFor(
+      '(function(){var e=document.getElementById("loginErr");return !!(e&&!e.hidden&&e.textContent.length>10);})()',
+      20000, '普通会员被拒');
+    const needMember = await cdp.eval(
+      '(function(){var e=document.getElementById("loginErr");return e?String(e.textContent).trim():"";})()');
+    T.eq('普通会员被拒文案逐字一致', needMember,
+      '你还未开通会员，无法使用打卡平台，请联系管理员开通会员后再使用！');
+    T.ok('被拒时仍停留在登录窗（未进入应用）',
+      await cdp.eval('!!document.getElementById("app").hidden'));
+
+    /* 忘记密码：重置为新密码 */
+    await cdp.eval('document.querySelector(\'.lgm-tabs .ltab[data-tab="forgot"]\').click()');
+    await cdp.waitFor('!!document.getElementById("forgotForm")', 15000, '忘记密码表单');
+    await sleep(300);
+    const fgCap1 = await currentCaptcha(cdp);
+    await fillForm(cdp, 'forgotForm', {
+      phone: REG.phone, newPassword: REG.newPassword, newPassword2: REG.newPassword,
+      captcha: fgCap1.answer,
+    });
+    await cdp.eval(CLEAR_TOASTS);
+    await cdp.eval('document.getElementById("smsBtn").click()');
+    const smsToast2 = await waitToast(cdp, /开发环境验证码/, 20000, '重置短信下发');
+    const devCode2 = (String(smsToast2).match(DEV_CODE_RE) || [])[1];
+    T.ok('重置密码短信已下发：' + devCode2, !!devCode2);
+    await sleep(400);
+
+    const fgCap2 = await currentCaptcha(cdp);
+    await fillForm(cdp, 'forgotForm', { captcha: fgCap2.answer, smsCode: devCode2 });
+    await submitForm(cdp, 'forgotForm');
+    const resetToast = await waitToast(cdp, /重置成功|密码已重置/, 25000, '重置提交');
+    T.ok('重置密码成功提示：' + String(resetToast).slice(0, 30), /重置|成功/.test(resetToast));
+    await sleep(500);
+
+    /* 新密码可登录（仍为普通会员 → 依旧被打卡平台拒绝，说明密码校验已通过） */
+    await cdp.waitFor('!!document.getElementById("loginForm")', 15000, '回到登录表单');
+    await fillForm(cdp, 'loginForm', { username: REG.username, password: REG.newPassword });
+    await submitForm(cdp, 'loginForm');
+    await cdp.waitFor(
+      '(function(){var e=document.getElementById("loginErr");return !!(e&&!e.hidden&&e.textContent.length>10);})()',
+      25000, '新密码登录结果');
+    const afterReset = await cdp.eval(
+      '(function(){var e=document.getElementById("loginErr");return e?String(e.textContent).trim():"";})()');
+    T.ok('新密码校验通过（不是「账号或密码不正确」）：' + afterReset.slice(0, 24),
+      afterReset.indexOf('账号或密码不正确') < 0);
+    T.eq('重置后新密码可登录（仅剩会员门禁拦截）', afterReset,
+      '你还未开通会员，无法使用打卡平台，请联系管理员开通会员后再使用！');
+
+    /* 清理测试账号 */
+    if (conn) {
+      await conn.execute('DELETE FROM students WHERE username = ?', [REG.username]);
+      T.ok('注册流程产生的测试账号已清理', true);
+    }
+
+    /* ══════════ 10. 控制台异常 ══════════ */
+    T.section('10. 页面异常检查');
+    const real = pageErrors.filter(function (x) {
+      return !/favicon|net::ERR|status of 4\d\d|status of 5\d\d|\b404\b/i.test(x);
+    });
     T.ok('页面脚本无未捕获异常（采集 ' + real.length + ' 条）', real.length === 0,
       real.slice(0, 4).join(' | '));
   } catch (e) {
@@ -391,6 +633,7 @@ async function login(cdp) {
     T.fail++;
     T.failures.push('中断：' + e.message);
   } finally {
+    if (conn) { try { await conn.end(); } catch (e) { /* 忽略 */ } }
     close();
   }
 

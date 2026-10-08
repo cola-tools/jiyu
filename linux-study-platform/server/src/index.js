@@ -77,9 +77,13 @@ app.use('/api/member', require('./routes/member'));  // 会员：定价 / 我的
 app.use('/api/admin', require('./routes/admin'));   // 管理端：/api/admin/*
 app.use('/api', require('./routes/student'));       // 学生端：/api/tree /api/checkins /api/my/*
 
-/* ── 静态前端（可选：把 web/ 与 learn/ 一起部署时） ── */
-/*   /        → 打卡平台（web/）
-     /learn/  → 学习平台（learn/，由 study_linux.html 接入后端生成）  */
+/* ── 静态前端（可选：把 web/ 一起部署时） ── */
+/*   /  → 融合平台（web/）—— 第七阶段起数据平台与学习平台已合并，
+          课程 / 命令大全 / 实用技巧 / 注册 / 忘记密码全部并入 web/。
+     LEGACY: /learn/ 指向仓库里的旧独立学习平台。它已不再从产品里链接，
+           也不参与部署（见 tools/build-deploy.js），仅作为「会员体系
+           浏览器回归（tests/browser-member.js）」的被测载体保留。
+           确认要物理删除 learn/ 时，需同步迁移那部分断言。 */
 const WEB_DIR = path.resolve(__dirname, '..', '..', 'web');
 const LEARN_DIR = path.resolve(__dirname, '..', '..', 'learn');
 
@@ -95,7 +99,7 @@ if (fs.existsSync(WEB_DIR)) {
   });
 } else {
   /* ── 后端单独部署（如 Railway Root Directory 指向 server/）时，
-        根路径提供一页门户，说明服务状态并指向两个前端入口 ── */
+        根路径提供一页门户，说明服务状态并指向唯一的融合平台入口 ── */
   const esc = (s) => String(s || '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const webUrl = esc(process.env.WEB_URL || '');
@@ -127,8 +131,10 @@ if (fs.existsSync(WEB_DIR)) {
   <h1>🐧 Linux 学习打卡平台 · 后端服务运行中</h1>
   <div class="sub">API 服务正常 · 数据库 linux_study · 前端入口如下</div>
   <div class="row">
-    ${learnUrl ? `<a class="btn" href="${learnUrl}">📖 学习平台<small>${learnUrl}</small></a>` : ''}
-    ${webUrl ? `<a class="btn ghost" href="${webUrl}">📝 打卡平台<small>${webUrl}</small></a>` : ''}
+    ${webUrl
+      ? `<a class="btn" href="${webUrl}">🐧 Linux 学习打卡平台<small>${webUrl}</small></a>`
+      : `<a class="btn" href="/api/health">🐧 Linux 学习打卡平台<small>/api/health（服务自检）</small></a>`}
+    ${learnUrl ? `<a class="btn ghost" href="${learnUrl}">📖 旧版学习平台（已并入，仅存档）<small>${learnUrl}</small></a>` : ''}
   </div>
   <div class="kv">
     <div><span class="dot"></span>健康检查：<b>GET /api/health</b></div>

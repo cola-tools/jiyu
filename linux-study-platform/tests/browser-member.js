@@ -22,7 +22,7 @@
    ══════════════════════════════════════════════════════════════════ */
 const path = require('path');
 const mysql = require(path.join(__dirname, '..', 'server', 'node_modules', 'mysql2', 'promise'));
-const { T, launch, sleep, sel, LAST_TOAST } = require('./lib/cdp');
+const { T, launch, sleep, sel, LAST_TOAST, openLogin, SUBMIT_LOGIN } = require('./lib/cdp');
 
 const BASE = process.env.BASE || 'http://127.0.0.1:3210';
 const DB = {
@@ -189,20 +189,9 @@ async function gotoCheckin(cdp) {
 }
 
 async function checkinLogin(cdp, user, pass, role) {
-  /* 打卡平台登录页有「学生登录 / 管理员登录」角色切换，必须先切对角色 */
-  await cdp.eval(`(function(){
-    var b = document.querySelector('#loginPage .seg-btn[data-role="' + ${JSON.stringify(role || 'student')} + '"]');
-    if (b && !b.classList.contains('on')) b.click();
-    return true;
-  })()`);
-  await sleep(220);
-  await cdp.eval(`(function(){
-    var u = document.getElementById('loginUser'), p = document.getElementById('loginPass');
-    u.value = ${JSON.stringify(user)}; p.value = ${JSON.stringify(pass)};
-    var f = document.getElementById('loginForm');
-    f.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-    return true;
-  })()`);
+  /* 打卡平台登录页只有一个身份网关：点对应按钮弹出登录窗，再填表提交 */
+  await openLogin(cdp, role || 'student');
+  await cdp.eval(SUBMIT_LOGIN(user, pass));
 }
 
 /** 等「登录成功进入应用」或「登录页出现错误」二选一 */
@@ -421,7 +410,7 @@ async function waitLoginOutcome(cdp, timeout) {
     section('6. 管理后台会员管理（开通 / 3 秒后叠加 / 流水 / 禁用恢复）');
     await cdp.send('Page.navigate', { url: BASE + '/' });
     await cdp.waitFor('document.readyState === "complete"', 25000, '打卡平台重载');
-    await cdp.waitFor('document.getElementById("loginUser")', 20000, '登录表单');
+    await cdp.waitFor('!!document.getElementById("btnAdminLogin")', 20000, '身份网关');
     await checkinLogin(cdp, 'admin', 'admin@2026', 'admin');
     await cdp.waitFor('document.getElementById("app") && !document.getElementById("app").hidden', 25000, '管理员进入后台');
     await cdp.waitFor(sel('#view .stats-grid'), 25000, '数据面板');
@@ -741,7 +730,7 @@ async function waitLoginOutcome(cdp, timeout) {
     ok('学习平台禁用文案逐字一致', disMsg.indexOf(MSG.DISABLED) >= 0);
 
     await gotoCheckin(cdp);
-    await cdp.waitFor('document.getElementById("loginUser")', 20000, '打卡平台登录表单');
+    await cdp.waitFor('!!document.getElementById("btnStudentLogin")', 20000, '打卡平台身份网关');
     await checkinLogin(cdp, ACC.username, ACC.password);
     const r11 = await waitLoginOutcome(cdp, 20000);
     ok('打卡平台禁用提示逐字一致：' + r11.text, r11.text === MSG.DISABLED);
@@ -751,7 +740,7 @@ async function waitLoginOutcome(cdp, timeout) {
     await setStatusDb(idD, 1);
     await grantViaApi(idD, 'year');
     await gotoCheckin(cdp);
-    await cdp.waitFor('document.getElementById("loginUser")', 20000, '登录表单');
+    await cdp.waitFor('!!document.getElementById("btnStudentLogin")', 20000, '身份网关');
     await checkinLogin(cdp, ACC.username, ACC.password);
     const r12 = await waitLoginOutcome(cdp, 25000);
     ok('恢复使用后可正常登录打卡平台', r12.ok === true);

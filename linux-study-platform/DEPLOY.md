@@ -289,9 +289,18 @@ pm2 save && pm2 startup
 4. 回到 **Settings → Pages**，会看到站点地址：
    `https://yourname.github.io/linux-study-platform/` —— 这就是**前端地址**。
 
-### 7.2 把后端地址写进前端（关键一步）
+### 7.2 把后端地址写进前端（关键一步 ⚠️ 不做这步线上会 404 / 405）
 
-编辑 `web/index.html`，在 `<head>` 最早的位置（`config.js` 加载之前）加一行：
+**推荐做法（不用改代码）**：在仓库里配置一个 Actions 变量，流水线会自动把它注入 `index.html`。
+
+1. 仓库 → **Settings → Secrets and variables → Actions → Variables**；
+2. 新建变量：Name = `LINUX_STUDY_API`，Value = `https://你的后端地址`（**不要带结尾斜杠，也不要带 `/api`**）；
+3. 重新跑一次 Actions（或随便推一次 `web/` 下的改动）。
+
+流水线会在发布前把 `window.LINUX_STUDY_API` 注入到页面 `<head>` 最前面，并在日志里打印
+`✔ 已注入后端地址：https://…`；注入失败会**直接让流水线失败**，不会再出现「前端上线了但后端地址是空的」这种隐蔽问题。
+
+**备选做法（改代码）**：直接编辑 `web/index.html`，在 `<head>` 最早位置（`config.js` 之前）加一行：
 
 ```html
 <script>window.LINUX_STUDY_API = "https://你的后端地址";</script>
@@ -305,7 +314,11 @@ git commit -m "deploy: 指向后端 API 地址"
 git push
 ```
 
-Actions 会自动重新发布。完成后打开前端地址，应能看到登录页，直接用账号登录成功。
+> 两者都没配也不会彻底白屏：`web/js/config.js` 在识别到 `*.github.io` / `eojjr.cn`
+> 这类纯静态托管环境时会自动回退到默认后端（控制台会打一条 warning）。
+> 但**显式配置永远优先**，请务必配上。
+
+Actions 会自动重新发布。完成后打开前端地址，应能看到**唯一的一个登录窗口**（下方「学生登录」「管理员登录」两个按钮），直接登录即可。
 
 ### 7.3 更新 CORS 白名单
 
@@ -518,49 +531,68 @@ mysqldump -h 主机 -P 端口 -u 用户 -p 库名 > backup-$(date +%F).sql
 
 开通超级会员后，头像旁的「普通会员」会变成**金色「超级会员」**，全章节 🔒 消失。
 
-### 14.4 注册 / 登录 / 忘记密码
+### 14.4 注册 / 登录 / 忘记密码（全部在同一个登录窗内）
 
-学习平台与打卡平台共用一套账号（`/learn/` 与打卡平台互相跳转）：
+**整站只有一个登录窗口**：登录页（身份网关）上只有「学生登录」「管理员登录」两个按钮，
+点哪个才弹出对应身份的登录窗；窗内是三个页签 —— **登录 / 注册账号 / 忘记密码**。
+管理员身份只开放「登录」（管理员账号由超级管理员在后台创建）。
 
-- 注册需填：**用户名、密码、确认密码、手机号、手机号短信验证码、图形验证码**；
-- **手机号是唯一性凭证**，重复注册提示「该手机号已绑定账号，请直接登录！」；
-- 注册成功默认**普通会员**；账号创建后**不可注销**；
-- 忘记密码：输入手机号 + 短信验证码后**直接设置新密码**；
-- 短信验证码限流：同号同场景 60 秒一条、同号每天 10 条、同 IP 每小时 20 条。
+| 页签     | 字段                                                      | 说明                                          |
+| ------ | ------------------------------------------------------- | ------------------------------------------- |
+| 登录     | 账号 + 密码（可切换明文）+ 记住账号 / 大写锁定提示                            | 学生携带 `platform=checkin`，非超级会员会被拒             |
+| 注册账号   | 用户名 + 密码 + 确认密码 + 手机号 + **短信验证码** + **图形验证码**             | **手机号是唯一性凭证**，重复注册提示「该手机号已绑定账号，请直接登录！」       |
+| 忘记密码   | 手机号 + **短信验证码** + 新密码 + 确认新密码                            | 校验通过后直接设置新密码，旧令牌全部失效                        |
+
+- 注册成功默认**普通会员**，提示「注册成功后联系管理员开通超级会员」，并自动回到登录页签、预填用户名；
+- 账号创建后**不可注销**；
+- 短信验证码限流：同号同场景 60 秒一条、同号每天 10 条、同 IP 每小时 20 条（按钮上带 60s 重发倒计时）。
 
 > **接真实短信**：把 `SMS_PROVIDER` 改成 `http` 并配置你的短信服务商接口
 > （见 `server/src/sms.js` 顶部的 provider 说明），再把 `SMS_DEBUG` 改成 `0`。
 
-### 14.5 学习平台是怎么接进来的
+### 14.5 两平台融合说明（第七阶段）
 
-`learn/index.html` 由 `tools/build-learn.js` 从你提供的 `study_linux.html` **自动生成**：
-构建脚本对原文件打 13 条补丁（统一 CRLF/LF → 注入主题引导 → 暴露 `window.__lcb` 数据钩子 →
-章节标题追加 🔒 → 打卡 / 导出 / 撤销改为走服务端），**不改写原应用任何一行逻辑**；
-`learn/bridge.js` 通过这些钩子接管注册登录、章节门禁、打卡与导出。
+打卡平台与学习平台已合并为**一个平台**（`web/`，唯一入口）：
 
-以后若要更新学习内容，改回 `study_linux.html`（或 `tools/build-learn.js` 里的数据源）后执行：
+- 学习平台的 **Linux 教程（31 讲）/ 命令大全（441 条）/ 实用技巧（12 条）** 全部并入学生端侧栏：
+  「学习」组（我的学习 / 课程学习 / 命令大全 / 实用技巧）+「练习」组（学习目录 / 我的打卡 / 练习题）+
+  「互动」组（老师督促）+「设置」组（我的资料）；
+- 学习内容直接**读数据库 `units` 表**（484 个可打卡节点），不再维护静态内容副本，进度天然同源；
+  `GET /api/tree?maxLevel=3` 只取 1~3 级索引，响应体 ≈131 KB（对比全量 ≈1 MB）；
+- 登录 **只保留一个窗口**（见 14.4），注册 / 忘记密码也并入同一窗口；
+- 全站统一**手绘风**：手写体字栈 + 不规则圆角 + `feTurbulence` 抖动描边 + 荧光笔高亮 + 纸胶带装饰；
+- 部署包**不再产出 `learn/`**，门户页也不再出现「两个平台」的卡片
+  （`tools/build-deploy.js`；旧书签 `/web/` 会自动跳转到新的根路径）。
+
+> **遗留说明**：仓库里的 `learn/` 目录（旧独立学习平台）**已从产品里彻底摘除**——
+> 页面上没有任何入口、不参与部署。保留它只是为了继续承载
+> `tests/browser-member.js` 中约 28 项会员体系浏览器回归断言（注册门禁 / 章节锁 / 定价浮层 /
+> 到期强制退出），以及为普通会员保留一条「免费第一章」的只读入口。
+> 若要物理删除，请一并迁移那部分断言，并移除 `server/src/index.js` 里的 LEGACY `/learn` 静态托管。
+
+### 14.6 本地验证（五套测试，共 424 项断言）
 
 ```bash
-node tools/build-learn.js
-```
+# 0) 前置：MySQL（测试库端口 3399）+ 后端
+node server/src/index.js
 
-即可重新生成 `learn/index.html`（构建时会自检 `__lcb` 引用的标识符是否真实存在，
-避免出现「桥接层静默失效」的问题）。
-
-### 14.6 本地验证（三套测试，共 301 项断言）
-
-```bash
 # 1) 后端接口端到端（注册/门禁/叠加/到期/禁用/导出）
 node tests/api-member-smoke.js          # 123 项
 
-# 2) 打卡平台浏览器端到端（无头 Chrome）
-node tests/browser-smoke.js             # 101 项
+# 2) 跨域 / 前后端分离部署冒烟
+node tests/api-crossorigin-smoke.js     #  16 项
 
-# 3) 会员体系浏览器端到端（学习平台 + 管理后台 + 打卡平台）
-node tests/browser-member.js            # 77 项
+# 3) 融合平台浏览器端到端（单一登录窗 / 课程 / 命令 / 技巧 / 注册 / 忘记密码 / 移动端）
+node tests/browser-learn.js             # 102 项
+
+# 4) 平台浏览器端到端（学生端 + 管理端 + 多尺寸适配）
+node tests/browser-smoke.js             # 106 项
+
+# 5) 会员体系浏览器端到端
+node tests/browser-member.js            #  77 项
 ```
 
-三套套件都会**自动复位演示账号基线、清理自己创建的测试账号**，可以反复运行；
+五套套件都会**自动复位演示账号基线、清理自己创建的测试账号**，可以反复运行；
 `browser-*` 需要本机装有 Chrome，截图输出到 `tests/shots/`。
 
 ---
@@ -569,16 +601,17 @@ node tests/browser-member.js            # 77 项
 
 ```
 linux-study-platform/
-├── web/                     # 打卡平台前端（部署到 GitHub Pages）
-│   ├── index.html           #   入口页（window.LINUX_STUDY_API 写在这里）
-│   ├── css/  theme.css app.css member.css
-│   └── js/   config util api store ui member + views/{login,student,admin} + app
-├── learn/                   # 学习平台前端（由 study_linux.html 接入后端生成）
+├── web/                     # ⭐ 融合平台前端（打卡 + 学习，部署到 GitHub Pages 的根）
+│   ├── index.html           #   入口页（单一登录窗口 + 注入口 window.LINUX_STUDY_API）
+│   ├── css/  theme.css app.css member.css learn.css login.css
+│   └── js/   config util api store ui member
+│             + views/{login,student,learn,admin} + app
+├── learn/                   # 旧独立学习平台（已摘除入口、不参与部署，仅存档 + 会员回归用）
 │   ├── index.html           #   生成产物（勿手改，改 tools/build-learn.js 后重新构建）
 │   ├── bridge.css           #   桥接层样式（会员徽标 / 门禁 / 定价 / 倒计时）
 │   └── bridge.js            #   桥接层逻辑（注册登录 / 章节门禁 / 打卡与导出）
 ├── server/                  # 后端（部署到 Railway / 自建服务器）
-│   ├── src/index.js         #   Express 入口（/api + /learn + 打卡平台静态托管）
+│   ├── src/index.js         #   Express 入口（/api + 融合平台静态托管 + LEGACY /learn）
 │   ├── src/member.js        #   会员核心：开通/叠加/到期降级/惰性判定
 │   ├── src/{auth,sms,captcha,exporter}.js
 │   ├── src/routes/          #   auth(注册登录验证码) / student / member / admin 四组 API
@@ -588,13 +621,17 @@ linux-study-platform/
 │   ├── schema.sql           # v2 全量表结构（MySQL 5.7+ 兼容）
 │   ├── migrate_v2_member.sql#   v1 → v2 会员体系幂等迁移脚本
 │   ├── seed_accounts.sql / seed_content.sql / gen_seed.py
-├── tools/build-learn.js     # 学习平台构建脚本（给 study_linux.html 打 13 条补丁）
+├── tools/
+│   ├── build-deploy.js      # ⭐ 生成单平台部署包（不再产出 learn/）
+│   └── build-learn.js       # LEGACY：维护 learn/ 存档（不参与部署）
 ├── tests/
 │   ├── api-member-smoke.js  # 会员体系接口端到端测试（123 项）
-│   ├── browser-smoke.js     # 打卡平台浏览器端到端测试（101 项）
+│   ├── api-crossorigin-smoke.js # 跨域部署冒烟（16 项）
+│   ├── browser-learn.js     # 融合平台浏览器端到端测试（102 项）
+│   ├── browser-smoke.js     # 平台浏览器端到端测试（106 项）
 │   ├── browser-member.js    # 会员体系浏览器端到端测试（77 项）
 │   └── lib/cdp.js           #   CDP 无头 Chrome 测试脚手架
 └── .github/workflows/deploy-pages.yml   # 前端自动发布流水线
 ```
 
-*文档版本：2026-10-02 · 对应当前代码（后端 123 项 + 打卡平台浏览器 101 项 + 会员浏览器 77 项端到端测试全部通过）*
+*文档版本：2026-10-08 · 对应当前代码（123 + 16 + 102 + 106 + 77 = 424 项端到端断言全部通过）*

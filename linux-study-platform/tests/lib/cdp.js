@@ -43,6 +43,28 @@ const LAST_M_CLICK = (css) => `(function(){var ms=document.querySelectorAll('.ui
   `if(!ms.length)return false;var m=ms[ms.length-1],n=m.querySelector(${JSON.stringify(css)});` +
   `if(!n)return false;n.click();return true;})()`;
 
+/* ───────── 登录：身份网关 + 弹窗（新版单一登录窗口） ───────── */
+const ROLE_BTN_ID = (role) => (role === 'admin' ? 'btnAdminLogin' : 'btnStudentLogin');
+/** 点击网关上的身份按钮，弹出对应登录窗 */
+const CLICK_ROLE = (role) => `(function(){var b=document.getElementById(` +
+  `${JSON.stringify(ROLE_BTN_ID(role))});if(!b)return false;b.click();return true;})()`;
+/** 登录窗已打开时填表并提交（表单 id 固定：loginUser / loginPass / loginForm） */
+const SUBMIT_LOGIN = (user, pass) => `(function(){` +
+  `var u=document.getElementById('loginUser'),p=document.getElementById('loginPass'),` +
+  `f=document.getElementById('loginForm');if(!u||!p||!f)return false;` +
+  `u.value=${JSON.stringify(user)};p.value=${JSON.stringify(pass)};` +
+  `f.dispatchEvent(new Event('submit',{cancelable:true,bubbles:true}));return true;})()`;
+
+/** 完整走一遍 UI：点身份按钮 → 等登录窗 → 填表提交 */
+async function openLogin(cdp, role) {
+  const r = role === 'admin' ? 'admin' : 'student';
+  const clicked = await cdp.eval(CLICK_ROLE(r));
+  if (clicked !== true) throw new Error('未找到身份按钮：' + ROLE_BTN_ID(r));
+  await cdp.waitFor('!!document.getElementById("loginUser")', 20000, '登录窗（' + r + '）');
+  await sleep(220);
+  return true;
+}
+
 /* ───────── CDP 客户端 ───────── */
 class CDP {
   constructor(ws) {
@@ -83,7 +105,13 @@ class CDP {
       awaitPromise: !!awaitPromise,
       userGesture: true,
     });
-    if (r.exceptionDetails) throw new Error('页面脚本异常: ' + (r.exceptionDetails.text || ''));
+    if (r.exceptionDetails) {
+      const ed = r.exceptionDetails;
+      const ex = ed.exception || {};
+      const desc = ex.description || ex.value || ed.text || '(无描述)';
+      throw new Error('页面脚本异常: ' + desc +
+        ' @' + (ed.url || '?') + ':' + (ed.lineNumber || 0) + ':' + (ed.columnNumber || 0));
+    }
     if (r.result && r.result.value && r.result.value.__err) throw new Error('页面脚本抛错: ' + r.result.value.__err);
     return r.result ? r.result.value : undefined;
   }
@@ -188,4 +216,8 @@ async function launch(opts) {
   return { cdp, chrome, userDir, close, shots };
 }
 
-module.exports = { T, CDP, launch, sleep, sel, LAST_TOAST, LAST_M, LAST_M_CLICK };
+module.exports = {
+  T, CDP, launch, sleep, sel,
+  LAST_TOAST, LAST_M, LAST_M_CLICK,
+  ROLE_BTN_ID, CLICK_ROLE, SUBMIT_LOGIN, openLogin,
+};

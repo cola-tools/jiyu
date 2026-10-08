@@ -549,7 +549,9 @@ html[data-theme="dark"] .modal-bg { background: rgba(2, 7, 18, .72); }
   position: relative; z-index: 1;
 }
 .modal-head h3 { margin: 0; flex: 1; font-size: 19px; letter-spacing: .03em; }
-.modal-body { padding: 18px 20px; overflow-y: auto; position: relative; z-index: 1; -webkit-overflow-scrolling: touch; }
+/* min-height:0 让 .modal-body 在 flex 容器内真正可滚动；
+   否则内容过长会把 .modal-box 撑破 max-height，底部按钮看不见 */
+.modal-body { padding: 18px 20px; overflow-y: auto; min-height: 0; position: relative; z-index: 1; -webkit-overflow-scrolling: touch; }
 .modal-foot {
   padding: 14px 20px; border-top: 2px dashed var(--stroke-soft);
   display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;
@@ -599,3 +601,34 @@ html[data-theme="dark"] .modal-bg { background: rgba(2, 7, 18, .72); }
 html.no-rough .sketch::before,
 html.no-rough .card::before,
 html.no-rough .modal-box::before { filter: none; }
+
+/* ───────── 12. 手绘描边补齐：按钮 / 标签 / 侧栏导航项 ─────────
+   与 .card / .stat-card / .panel 同一手法：真实 border 透明化，
+   改由伪元素承载 feTurbulence 抖动描边——文字保持清晰、尺寸不变。
+   （<input> 是替换元素，不支持 ::after，故输入框仍用直边描边） */
+.btn, .chip, .nav-item { position: relative; }
+.btn::after, .chip::after, .nav-item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2.5px solid var(--stroke);
+  border-radius: inherit;
+  filter: url(#rough);
+  pointer-events: none;
+}
+.btn { border-color: transparent; }
+
+.chip { border-color: transparent; }
+.chip::after { border-width: 2px; border-color: var(--stroke-soft); }
+.chip.d1::after { border-color: var(--ok); }
+.chip.d2::after { border-color: var(--accent); }
+.chip.d3::after { border-color: var(--warn); }
+.chip.d4::after { border-color: var(--danger); }
+
+.nav-item::after { border-color: transparent; }
+.nav-item.on { border-color: transparent; box-shadow: var(--shadow); }
+.nav-item.on::after { border-color: var(--stroke); }
+
+html.no-rough .btn::after,
+html.no-rough .chip::after,
+html.no-rough .nav-item::after { filter: none; }

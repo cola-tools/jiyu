@@ -28,13 +28,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # .nojekyll：告诉 GitHub Pages 不要用 Jekyll 处理，
-      # 避免下划线开头文件被忽略、渲染耗时
-      - name: 准备发布目录
+      # 融合平台（web/）就是唯一入口：直接发布到 Pages 根目录，
+      # 不再产出独立的 learn/ 平台。
+      # 后端地址优先取仓库变量 LINUX_STUDY_API（Settings → Secrets and variables
+      # → Actions → Variables）。未配置时由 web/js/config.js 的静态托管回退策略兜底。
+      - name: 准备发布目录（融合平台 · 单入口）
+        env:
+          LINUX_STUDY_API: ${{ vars.LINUX_STUDY_API }}
         run: |
+          set -e
+          rm -rf _site
           mkdir -p _site
           cp -r web/* _site/
+          if [ -n "$LINUX_STUDY_API" ]; then
+            node -e '
+              const fs = require("fs");
+              const p = "_site/index.html";
+              let h = fs.readFileSync(p, "utf8");
+              if (!h.includes("window.LINUX_STUDY_API")) {
+                const api = process.env.LINUX_STUDY_API.replace(/\/+$/, "");
+                const tag = "<script>/* 部署注入：后端地址 */\nwindow.LINUX_STUDY_API = " + JSON.stringify(api) + ";</script>";
+                const out = h.replace("</title>", "</title>\n" + tag);
+                if (!out.includes("window.LINUX_STUDY_API")) {
+                  console.error("✖ 后端地址注入失败");
+                  process.exit(1);
+                }
+                fs.writeFileSync(p, out);
+              }
+            '
+            grep -q 'window.LINUX_STUDY_API' _site/index.html
+            echo "✔ 已注入后端地址：$LINUX_STUDY_API"
+          else
+            echo "⚠ 未配置仓库变量 LINUX_STUDY_API，后端地址将交由 config.js 的静态托管回退策略决定"
+          fi
+          # .nojekyll：告诉 GitHub Pages 不要用 Jekyll 处理，
+          # 避免下划线开头文件被忽略、渲染耗时
           touch _site/.nojekyll
+          [ ! -d _site/learn ] && echo "✔ 产物中无 learn/（双平台已融合为单平台）"
 
       - name: 配置 Pages
         uses: actions/configure-pages@v5

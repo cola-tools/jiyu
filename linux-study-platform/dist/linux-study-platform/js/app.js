@@ -26,6 +26,11 @@
     student: [
       { group: '学习', items: [
         { key: 'dashboard', title: '我的学习', icon: '📊' },
+        { key: 'course',    title: '课程学习', icon: '📖' },
+        { key: 'cmds',      title: '命令大全', icon: '⌨️' },
+        { key: 'tips',      title: '实用技巧', icon: '💡' },
+      ] },
+      { group: '练习', items: [
         { key: 'catalog',   title: '学习目录', icon: '📚' },
         { key: 'records',   title: '我的打卡', icon: '✅' },
         { key: 'exercises', title: '练习题',   icon: '✏️' },
@@ -450,9 +455,8 @@
         else if (act === 'pricing') { if (MG) MG.openPricing(); }
         else if (act === 'member') { if (MG) MG.openMine(); }
         else if (act === 'learn') {
-          /* 学习平台与打卡平台共用同一套账号与会员体系
-             相对路径：无论部署在根路径还是 /linux-study-platform/ 子目录下都能正确跳转 */
-          w.open('../learn/', '_blank');
+          /* 学习内容已与打卡平台融合：不再跳转外部站点，直接切到「课程学习」 */
+          App.go('course');
         }
         else if (act === 'theme') {
           var t = STORE.toggleTheme();

@@ -1,0 +1,267 @@
+/* ══════════════════════════════════════════════════════════════════
+   learn.css · 学习内容视图（课程学习 / 命令大全 / 实用技巧）
+   依赖 theme.css 的设计令牌与 app.css 的 .panel / .btn / .chip 等基础件。
+   目标是「同一只手画出来的」：圆角不规则、描边略粗、虚线分隔、
+   极轻微的旋转，与打卡平台其它页面看不出接缝。
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ───────── 1. 通用小件 ───────── */
+
+.chips-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.chips-row .chip { font-size: 13px; }
+
+.lv-crumbs { margin-bottom: 2px; }
+.lv-crumbs > span:not(.sep) { max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ───────── 2. 课程列表 ───────── */
+
+.lv-groups { display: flex; flex-direction: column; gap: 18px; }
+
+.lv-gbar { padding: 0 2px 12px; }
+
+.lv-tut { cursor: pointer; }
+.lv-tut:hover { background: var(--surface-2); }
+.lv-tut[data-done="1"] .l-title { color: var(--ok); }
+
+/* 序号：手写圈 */
+.lv-no {
+  flex: 0 0 38px; width: 38px; height: 38px;
+  display: grid; place-items: center;
+  font-size: 15px; font-weight: 800;
+  color: var(--accent); background: var(--accent-soft);
+  border: 2.5px solid var(--accent);
+  border-radius: 52% 48% 55% 45% / 46% 54% 46% 54%;
+}
+.lv-tut[data-done="1"] .lv-no {
+  color: var(--ok); background: var(--ok-soft); border-color: var(--ok);
+}
+
+/* ───────── 3. 教程阅读器 ───────── */
+
+.lv-toc .chips-row { gap: 9px; }
+.lv-toc-item {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 13px 6px 8px;
+  font-size: 14px; color: var(--ink-2);
+  background: var(--surface-2);
+  border: 2px solid var(--stroke-soft);
+  border-radius: var(--r-chip);
+  transition: var(--t-fast);
+}
+.lv-toc-item:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1.5px); }
+.lv-toc-item b {
+  display: grid; place-items: center;
+  width: 21px; height: 21px; flex: 0 0 21px;
+  font-size: 12px; font-family: var(--font-num);
+  color: var(--accent-solid-ink); background: var(--accent-solid);
+  border-radius: 50% 44% 52% 48% / 48% 52% 44% 56%;
+}
+
+/* 正文 */
+.lv-art .panel-body { padding: 26px 30px 30px; }
+.lv-art .art { font-size: 16.5px; }
+
+/* 章节小标题：左侧荧光笔条 + 手画下划线 */
+.blk-h {
+  position: relative;
+  margin: 30px 0 14px;
+  padding-left: 16px;
+  font-size: 19.5px; letter-spacing: .04em; color: var(--ink);
+}
+.blk-h:first-child { margin-top: 4px; }
+.blk-h::after {
+  content: '';
+  position: absolute; left: 16px; right: 12%;
+  bottom: -5px; height: 7px;
+  background: var(--mark);
+  border-radius: 60% 40% 55% 45% / 70% 30% 70% 30%;
+  pointer-events: none;
+}
+html[data-theme="dark"] .blk-h::after { background: rgba(61, 124, 184, .3); }
+.blk-h .bh-bar {
+  position: absolute; left: 0; top: 4px; bottom: 4px; width: 5px;
+  background: var(--accent);
+  border-radius: 60% 40% 55% 45% / 70% 30% 70% 30%;
+}
+
+/* 阅读底栏 */
+.lv-foot .panel-body { padding: 20px 22px; }
+
+/* ───────── 4. 命令大全 ───────── */
+
+.lv-cats {
+  display: flex; gap: 9px; flex-wrap: wrap;
+}
+.lv-cat {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 9px 15px;
+  font-size: 14.5px; font-weight: 700; color: var(--ink-2);
+  background: var(--surface);
+  border: 2.5px solid var(--stroke-soft);
+  border-radius: var(--r-chip);
+  cursor: pointer; transition: var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+  min-height: 42px;
+}
+.lv-cat:hover { color: var(--ink); border-color: var(--stroke-2); transform: translateY(-2px); }
+.lv-cat.on {
+  color: var(--accent-solid-ink); background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  box-shadow: var(--shadow);
+}
+.lv-cat .lc-t { white-space: nowrap; }
+.lv-cat b {
+  font-family: var(--font-num); font-size: 12.5px; font-weight: 800;
+  padding: 1px 8px;
+  background: var(--surface-3); color: var(--ink-2);
+  border-radius: 20px;
+}
+.lv-cat.on b { background: rgba(255, 255, 255, .28); color: #fff; }
+.lv-cat .lc-d { font-style: normal; font-size: 12px; color: var(--ok); font-weight: 800; }
+.lv-cat.on .lc-d { color: #fff; }
+.lv-cat .lc-l { font-style: normal; font-size: 12px; }
+
+.lv-filters .lv-search { flex: 1 1 260px; min-width: 200px; }
+
+/* 命令表格 */
+.lv-cmdtbl { min-width: 720px; }
+.lv-cmdtbl tbody tr.row-done td { background: var(--ok-soft); }
+.lv-cmdtbl tbody tr.row-done:hover td { background: var(--ok-soft); }
+
+.lv-cmdname {
+  display: inline-block;
+  padding: 3px 10px;
+  font-family: var(--font-mono); font-size: 15px; font-weight: 800;
+  color: var(--accent); background: var(--accent-soft);
+  border: 2px solid var(--accent); border-radius: 12px 200px 12px 200px / 200px 12px 200px 12px;
+  cursor: pointer; transition: var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+  word-break: break-all;
+}
+.lv-cmdname:hover { background: var(--accent-solid); color: var(--accent-solid-ink); transform: translate(-1.5px, -1.5px); }
+
+.lv-ex {
+  display: inline-block; max-width: 100%;
+  padding: 3px 10px;
+  font-family: var(--font-mono); font-size: 13.5px;
+  color: var(--ink-2); background: var(--surface-2);
+  border: 2px dashed var(--stroke-soft); border-radius: 12px 200px 12px 200px / 200px 12px 200px 12px;
+  cursor: pointer; transition: var(--t-fast);
+  text-align: left; word-break: break-all;
+  -webkit-tap-highlight-color: transparent;
+}
+.lv-ex:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+/* 分页器 */
+.lv-pager {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 16px 18px;
+}
+.lv-pager .pg-btn {
+  min-width: 38px; min-height: 38px;
+  padding: 6px 11px;
+  font-family: var(--font-num); font-size: 14.5px; font-weight: 700;
+  color: var(--ink-2); background: var(--surface);
+  border: 2.5px solid var(--stroke-soft); border-radius: var(--r-chip);
+  cursor: pointer; transition: var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+.lv-pager .pg-btn:hover:not(:disabled) { color: var(--ink); border-color: var(--stroke-2); transform: translateY(-2px); }
+.lv-pager .pg-btn:disabled { opacity: .38; cursor: not-allowed; }
+.lv-pager .pg-btn.on {
+  color: var(--accent-solid-ink); background: var(--accent-solid); border-color: var(--accent-solid);
+}
+.lv-pager .pg-info { margin-left: auto; font-size: 13.5px; color: var(--ink-3); }
+
+/* ───────── 5. 实用技巧 ───────── */
+
+.lv-tips {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+.lv-tip {
+  position: relative;
+  display: flex; flex-direction: column; gap: 11px;
+  padding: 17px 18px;
+  background: var(--surface);
+  border: 2.5px solid var(--stroke-soft);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow);
+  transition: var(--t-fast);
+}
+.lv-tip:hover { transform: translate(-2px, -2px) rotate(-.3deg); box-shadow: var(--shadow-lg); }
+.lv-tip.done { background: var(--ok-soft); border-color: var(--ok); }
+
+.lv-tip .lt-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lv-tip .lt-no {
+  flex: 0 0 30px; width: 30px; height: 30px;
+  display: grid; place-items: center;
+  font-size: 13px; font-weight: 800;
+  color: var(--accent); background: var(--accent-soft);
+  border: 2.5px solid var(--accent);
+  border-radius: 52% 48% 55% 45% / 46% 54% 46% 54%;
+}
+.lv-tip.done .lt-no { color: var(--ok); background: var(--ok-soft); border-color: var(--ok); }
+.lv-tip .lt-t { flex: 1 1 150px; font-size: 15.5px; font-weight: 800; color: var(--ink); line-height: 1.55; }
+.lv-tip .lt-d { font-size: 14px; line-height: 1.78; color: var(--ink-2); }
+
+.lv-tip .lt-code {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px;
+  background: var(--code-bg);
+  border: 2px solid var(--stroke);
+  border-radius: 14px 180px 14px 180px / 180px 14px 180px 14px;
+}
+.lv-tip .lt-code code {
+  flex: 1 1 auto; min-width: 0;
+  font-size: 13.5px; color: var(--code-ink);
+  word-break: break-all; line-height: 1.6;
+}
+.lv-tip .lt-code .btn {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, .88); background: rgba(255, 255, 255, .12);
+  border-color: rgba(255, 255, 255, .34);
+}
+.lv-tip .lt-code .btn:hover { background: rgba(255, 255, 255, .24); color: #fff; }
+
+.lv-tip .lt-foot { display: flex; gap: 9px; flex-wrap: wrap; margin-top: auto; }
+
+/* ───────── 6. 详情弹层内的分节 ───────── */
+
+.card-sect {
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 2px dashed var(--stroke-soft);
+}
+.card-sect.mb0 { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }
+.card-sect .cs-h {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+  font-size: 15.5px; font-weight: 800; color: var(--ink);
+  letter-spacing: .03em;
+}
+.card-sect .ex-h {
+  margin: 14px 0 6px;
+  font-size: 14.5px; font-weight: 700; color: var(--ink-2);
+}
+.card-sect .content-body { font-size: 15.5px; line-height: 1.85; }
+.card-sect .code:first-of-type { margin-top: 0; }
+
+/* ───────── 7. 响应式 ───────── */
+
+@media (max-width: 900px) {
+  .lv-art .panel-body { padding: 20px 17px 24px; }
+  .lv-art .art { font-size: 16px; }
+  .blk-h { font-size: 18px; margin: 24px 0 12px; }
+}
+
+@media (max-width: 600px) {
+  .lv-tips { grid-template-columns: 1fr; }
+  .lv-cat { padding: 8px 12px; font-size: 14px; }
+  .lv-pager { padding: 12px 6px; }
+  .lv-pager .pg-info { margin-left: 0; flex: 1 1 100%; }
+  .lv-cmdtbl { min-width: 560px; }
+  .lv-crumbs > span:not(.sep) { max-width: 34vw; }
+}

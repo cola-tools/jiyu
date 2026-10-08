@@ -110,31 +110,8 @@ html[data-theme="dark"] {
 }
 .login-head p { margin: 0; font-size: 14.5px; color: var(--ink-3); line-height: 1.7; }
 
-/* 分段控件（学生 / 管理员） */
-.seg {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-  padding: 6px;
-  background: var(--surface-2);
-  border: 2.5px solid var(--stroke-soft);
-  border-radius: var(--r-chip);
-  margin-bottom: 20px;
-}
-.seg-btn {
-  padding: 9px 8px; font-size: 15.5px; font-weight: 700;
-  color: var(--ink-2); background: transparent; border: 0;
-  border-radius: var(--r-chip); cursor: pointer;
-  transition: var(--t-fast);
-  -webkit-tap-highlight-color: transparent;
-}
-.seg-btn:hover { color: var(--ink); }
-.seg-btn.on {
-  background: var(--surface);
-  color: var(--ink);
-  border: 2.5px solid var(--stroke);
-  box-shadow: var(--shadow);
-  transform: rotate(-.5deg);
-}
-
+/* （原「学生 / 管理员」分段控件已移除：登录页改为身份网关 + 弹窗，
+    样式集中在 css/login.css，这里的 .login-err 仍为登录弹窗复用） */
 .login-err {
   margin: -4px 0 12px;
   padding: 9px 14px;
@@ -1149,9 +1126,9 @@ body.has-checkin-bar .view { padding-bottom: calc(84px + env(safe-area-inset-bot
   .panel-head { padding: 11px 13px; }
   .panel-head h3 { font-size: 16px; }
   .list-row .l-right { flex: 1 1 100%; justify-content: flex-end; }
-  .login-card { padding: 24px 20px 20px; }
-  .login-head h1 { font-size: 21px; }
-  .login-head p { font-size: 13.5px; }
+  .login-gate { padding: 26px 20px 20px; }
+  .gate-title { font-size: 21px; }
+  .gate-sub { font-size: 13.5px; }
   .toasts { right: 10px; left: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); max-width: none; }
   .modal { padding: 10px; }
   .modal-head { padding: 13px 15px; }
@@ -1171,7 +1148,6 @@ body.has-checkin-bar .view { padding-bottom: calc(84px + env(safe-area-inset-bot
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stat-card .s-num { font-size: 21px; }
   .stat-card .s-top { font-size: 12.5px; }
-  .seg-btn { font-size: 14.5px; padding: 8px 5px; }
   .checkin-bar { padding-left: 10px; padding-right: 10px; column-gap: 6px; }
   .checkin-bar .btn { font-size: 14px; padding: 8px 11px; }
   .cbar-info b { font-size: 17px; }
@@ -1200,8 +1176,8 @@ body.has-checkin-bar .view { padding-bottom: calc(84px + env(safe-area-inset-bot
   .topbar { padding-left: 9px; padding-right: 9px; gap: 7px; }
   .icon-btn { width: 36px; height: 36px; font-size: 15px; }
   .theme-fab { width: 38px; height: 38px; flex-basis: 38px; }
-  .login-card { padding: 20px 15px 17px; }
-  .login-head h1 { font-size: 19px; letter-spacing: .05em; }
+  .login-gate { padding: 20px 15px 17px; }
+  .gate-title { font-size: 19px; letter-spacing: .05em; }
   .btn { padding: 7px 11px; font-size: 14px; }
   .checkin-bar .date-input { flex: 1 1 100%; }
 }

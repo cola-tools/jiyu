@@ -374,6 +374,10 @@
       U.copy(code).then(function (ok) {
         btn.textContent = ok ? '已复制 ✓' : '复制失败';
         setTimeout(function () { btn.textContent = '复制'; }, 1500);
+      }, function () {
+        // 兜底：剪贴板 API 抛错时不能产生未捕获的 Promise 拒绝
+        btn.textContent = '复制失败';
+        setTimeout(function () { btn.textContent = '复制'; }, 1500);
       });
     });
 
