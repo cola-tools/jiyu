@@ -77,19 +77,26 @@ function lockedPayload() {
 /* ───────────────────────── 目录树 ───────────────────────── */
 
 /**
- * GET /api/tree?withProgress=1&checkableOnly=0
+ * GET /api/tree?withProgress=1&maxLevel=4
  * 返回扁平目录树 + 每个节点的打卡统计（含子孙累计）
  * 每个节点附带 locked / isFree：
  *   普通会员仅能访问免费分支（默认「① 入门与安装」），其余节点 locked=true，前端渲染 🔒
+ *
+ * maxLevel（1~4，默认 4）：只返回该层级及以上的节点。
+ *   融合后的「课程学习 / 命令大全 / 实用技巧」视图只需要 1~3 级索引
+ *   （第 4 级是正文块，动辄上千条），传 maxLevel=3 可把响应体从约 1 MB 压到约 150 KB。
+ *   可打卡节点全部位于第 3 级，因此过滤后进度统计口径不变。
  */
 router.get('/tree', ah(async (req, res) => {
   const sid = req.session.id;
   const isSuper = !!req.session.isSuper;
+  const maxLevel = clampInt(req.query.maxLevel, 1, 4, 4);
   const units = await db.q(
     `SELECT id, parent_id, level, title, summary, content_type, difficulty,
             is_checkable, is_free, sort_order, example
-       FROM units WHERE status = 1
-      ORDER BY level, sort_order, id`
+       FROM units WHERE status = 1 AND level <= ?
+      ORDER BY level, sort_order, id`,
+    [maxLevel]
   );
   const freeSet = freeBranchIds(units);
   const checkable = units.filter((u) => u.is_checkable);
@@ -159,17 +166,23 @@ router.get('/units/:id', ah(async (req, res) => {
   const u = await db.one('SELECT * FROM units WHERE id = ?', [id]);
   if (!u) throw notFound('该学习内容不存在');
 
-  if (await isUnitLocked(id, !!req.session.isSuper)) {
+  const isSuper = !!req.session.isSuper;
+  // 门禁只设在「学习目录」这一层：能打开某个章节，就应当能读到它的全部正文。
+  // lockedSelf=false 表示当前用户（含普通会员）已落在免费分支内，此时子内容必须可见，
+  // 否则普通会员打开「① 入门与安装」的教程会看到一片空白。
+  const lockedSelf = await isUnitLocked(id, isSuper);
+  if (lockedSelf) {
     return res.status(403).json(Object.assign(lockedPayload(), {
       unit: { id: Number(u.id), title: u.title, level: u.level },
     }));
   }
   // 父级被锁时，子节点内容同样不可见
-  if (Number(u.parent_id) && await isUnitLocked(Number(u.parent_id), !!req.session.isSuper)) {
+  if (Number(u.parent_id) && await isUnitLocked(Number(u.parent_id), isSuper)) {
     return res.status(403).json(Object.assign(lockedPayload(), {
       unit: { id: Number(u.id), title: u.title, level: u.level },
     }));
   }
+  const childrenVisible = isSuper || !lockedSelf;
 
   const children = await db.q(
     `SELECT id, parent_id, level, title, summary, content_type, body, lang, example,
@@ -183,7 +196,6 @@ router.get('/units/:id', ah(async (req, res) => {
     [req.session.id, id]
   );
   const paths = await unitPaths([id]);
-  const isSuper = !!req.session.isSuper;
   res.json({
     unit: {
       id: Number(u.id), parentId: u.parent_id == null ? null : Number(u.parent_id),
@@ -196,9 +208,8 @@ router.get('/units/:id', ah(async (req, res) => {
     children: children.map((c) => ({
       id: Number(c.id), level: c.level, title: c.title, summary: c.summary,
       contentType: c.content_type, lang: c.lang,
-      // 锁定的子节点不下发正文，避免绕过前端限制
-      body: (!isSuper && !c.is_free) ? null : c.body,
-      locked: !isSuper && !c.is_free,
+      body: (childrenVisible || c.is_free) ? c.body : null,
+      locked: !(childrenVisible || c.is_free),
       difficulty: c.difficulty, checkable: !!c.is_checkable, example: c.example,
     })),
     checkin: ck && ck.status === 'done'
