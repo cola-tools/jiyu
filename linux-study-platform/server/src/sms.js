@@ -17,11 +17,14 @@
  *   off              完全关闭短信发送（仅用于纯内网演示），此时 devCode 可用。
  *
  * 验证码回显（前端「获取验证码」后直接显示在页面上，不经过短信）：
- *   · 非生产环境                → 始终回显（本地联调 / 自动化测试依赖它）
- *   · SMS_PROVIDER=off          → 始终回显（没有真实短信通道，页面必须能拿到码）
- *   · SMS_PUBLIC_CODE=1         → 显式强制回显（⚠ 等于任何人都能拿到任意手机号的验证码，
- *                                 注册 / 重置密码将完全失去防爆破能力，仅限内网演示）
- *   · 其余情况（production + 真实短信通道）→ 不回显，验证码只走短信
+ *   本平台的短信验证码『不经过真实短信通道、直接在页面上显示』是既定交互
+ *   （SMS_PROVIDER 只为 console/off 这类不真发短信的模式），因此 devCode
+ *   默认回传前端，页面 9 秒后常驻显示并自动代填，注册 / 重置密码放行。
+ *   · 默认（任意环境）          → 回显（功能要求：后端生成、页面直接展示）
+ *   · SMS_ECHO=0                → 关闭回显（仅当将来接入真实短信网关时使用）
+ *   · SMS_PUBLIC_CODE=1         → 同回显（历史别名，保留兼容）
+ *   ⚠ 接真实短信网关（SMS_PROVIDER=http）时，请务必设置 SMS_ECHO=0，
+ *     否则任何人都能在页面上拿到任意手机号的验证码，注册 / 重置将失去防爆破能力。
  *
  * 频率限制（防刷）：
  *   · 同一手机号 + 同一场景，60 秒内只能发送一次
@@ -43,9 +46,12 @@ const IS_PROD = String(process.env.NODE_ENV || '').toLowerCase() === 'production
 /** 开发环境固定验证码（便于自动化测试；生产环境忽略此变量） */
 const DEV_CODE = IS_PROD ? '' : String(process.env.SMS_DEV_CODE || '');
 
-/** 是否把验证码回传给前端（让页面直接显示，不经过短信） */
+/** 是否把验证码回传给前端（让页面直接显示，不经过短信）。
+ *  本平台短信验证码『不真发短信、页面直接显示』是既定交互，因此默认回显；
+ *  仅当显式 SMS_ECHO=0 时关闭（供将来接入真实短信网关时使用）。 */
+const ECHO_DISABLE = /^(0|false|off|no)$/i.test(String(process.env.SMS_ECHO || ''));
 const PUBLIC_CODE = /^(1|true|on|yes)$/i.test(String(process.env.SMS_PUBLIC_CODE || ''));
-const ECHO_CODE = !IS_PROD || PROVIDER === 'off' || PUBLIC_CODE;
+const ECHO_CODE = !ECHO_DISABLE || PUBLIC_CODE;
 
 const SCENE_CN = { register: '注册账号', forgot: '重置密码' };
 
@@ -177,9 +183,9 @@ async function send(phone, scene, ip) {
   // 把验证码回传给前端，页面在「获取验证码」后直接显示（不再依赖短信）
   if (ECHO_CODE) {
     out.devCode = code;
-    out.devHint = IS_PROD
-      ? '验证码已直接回传（SMS_PROVIDER=off 或 SMS_PUBLIC_CODE=1），请直接填入页面。'
-      : '开发环境回显验证码；生产环境（NODE_ENV=production）默认不返回。';
+    out.devHint = ECHO_DISABLE
+      ? '验证码回显已被 SMS_ECHO=0 关闭（真实短信模式下不应回显）。'
+      : '验证码已直接回传，页面 9 秒后显示在输入框下方并自动代填，请直接填入。';
   }
   return out;
 }
