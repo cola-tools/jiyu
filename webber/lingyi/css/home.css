@@ -1,0 +1,499 @@
+/* 轻量化独居老人大数据监护助手项目 - 首页样式文件 */
+/* 作者：XXX团队 创建时间：2026年 */
+
+/* 公告区域样式 */
+.announcement-section {
+    padding: 4rem 0;
+    background: var(--bg-secondary);
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    position: relative;
+}
+
+.section-header h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    background: var(--gradient-tech);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.section-header p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.announcement-badge {
+    position: absolute;
+    top: -10px;
+    right: 0;
+    background: var(--primary-orange);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.announcement-content {
+    display: grid;
+    gap: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.announcement-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 2rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-light);
+    transition: var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.announcement-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.announcement-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--gradient-tech);
+}
+
+.announcement-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--gradient-primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.announcement-text {
+    flex: 1;
+}
+
+.announcement-text h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.announcement-text p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.announcement-meta {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.announcement-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* 项目方案区域样式 */
+.plan-section {
+    padding: 4rem 0;
+    background: var(--bg-primary);
+}
+
+.plan-card {
+    text-align: center;
+    padding: 2.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.plan-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.1), transparent);
+    transition: var(--transition-slow);
+}
+
+.plan-card:hover::before {
+    left: 100%;
+}
+
+.plan-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--gradient-tech);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: white;
+    font-size: 2rem;
+    transition: var(--transition-normal);
+}
+
+.plan-card:hover .plan-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.plan-card h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.plan-card p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.plan-link {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: var(--primary-blue);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+}
+
+.plan-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: var(--transition-slow);
+}
+
+.plan-link:hover::before {
+    left: 100%;
+}
+
+.plan-link:hover {
+    background: var(--primary-purple);
+    transform: translateY(-2px);
+}
+
+/* 项目进度区域样式 */
+.progress-section {
+    padding: 4rem 0;
+    background: var(--bg-tertiary);
+}
+
+/* 方框进度条样式 */
+.box-progress-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.progress-box {
+    background: var(--bg-card);
+    border: 2px solid var(--border-light);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-box:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+}
+
+.progress-box.completed {
+    border-color: var(--primary-green);
+    background: linear-gradient(135deg, var(--bg-card), #e8f5e8);
+}
+
+.progress-box.current {
+    border-color: var(--primary-orange);
+    background: linear-gradient(135deg, var(--bg-card), #fff3e0);
+    box-shadow: 0 0 15px rgba(255, 152, 0, 0.3);
+}
+
+.box-number {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 auto 1rem;
+    font-size: 1.2rem;
+}
+
+.progress-box.completed .box-number {
+    background: var(--primary-green);
+    color: white;
+}
+
+.progress-box.current .box-number {
+    background: var(--primary-orange);
+    color: white;
+}
+
+.box-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.progress-box.completed .box-text {
+    color: var(--primary-green);
+}
+
+.progress-box.current .box-text {
+    color: var(--primary-orange);
+}
+
+.box-status {
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.progress-box .box-status {
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+}
+
+.progress-box.completed .box-status {
+    background: var(--primary-green);
+    color: white;
+}
+
+.progress-box.current .box-status {
+    background: var(--primary-orange);
+    color: white;
+}
+
+/* 友情链接样式 */
+.friend-links {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.friend-links h4 {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.friend-links-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.friend-link {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: var(--transition-fast);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.friend-link:hover {
+    color: var(--primary-blue);
+    background: var(--bg-tertiary);
+}
+
+/* 响应式设计 */
+@media (min-width: 1024px) {
+    .desktop-progress {
+        display: block;
+    }
+    
+    .progress-list {
+        display: none;
+    }
+    
+    .announcement-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .announcement-card {
+        flex-direction: row;
+        text-align: left;
+    }
+}
+
+@media (max-width: 768px) {
+    .announcement-section,
+    .plan-section,
+    .progress-section {
+        padding: 3rem 0;
+    }
+    
+    .section-header h2 {
+        font-size: 2rem;
+    }
+    
+    .announcement-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem;
+    }
+    
+    .announcement-icon {
+        margin: 0 auto;
+    }
+    
+    .announcement-meta {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .plan-card {
+        padding: 2rem 1.5rem;
+    }
+    
+    .progress-item {
+        padding: 0.75rem 1rem;
+    }
+    
+    .friend-links-list {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .announcement-section,
+    .plan-section,
+    .progress-section {
+        padding: 2rem 0;
+    }
+    
+    .section-header h2 {
+        font-size: 1.8rem;
+    }
+    
+    .announcement-card {
+        padding: 1rem;
+    }
+    
+    .plan-card {
+        padding: 1.5rem 1rem;
+    }
+    
+    .progress-item {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .progress-number {
+        width: 25px;
+        height: 25px;
+        font-size: 0.8rem;
+    }
+}
+
+/* 特殊效果 */
+.tech-glow {
+    position: relative;
+}
+
+.tech-glow::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(26, 115, 232, 0.1) 0%, transparent 70%);
+    transform: translate(-50%, -50%);
+    z-index: -1;
+    opacity: 0;
+    transition: var(--transition-normal);
+}
+
+.tech-glow:hover::after {
+    opacity: 1;
+}
+
+/* 加载动画 */
+.loading {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 延迟加载动画 */
+.announcement-card:nth-child(1) { animation-delay: 0.1s; }
+.announcement-card:nth-child(2) { animation-delay: 0.2s; }
+.plan-card:nth-child(1) { animation-delay: 0.1s; }
+.plan-card:nth-child(2) { animation-delay: 0.2s; }
+.plan-card:nth-child(3) { animation-delay: 0.3s; }
+.progress-item:nth-child(1) { animation-delay: 0.1s; }
+.progress-item:nth-child(2) { animation-delay: 0.2s; }
+.progress-item:nth-child(3) { animation-delay: 0.3s; }

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于我们 - 轻量化独居老人大数据监护助手</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/about.css">
+    <link rel="icon" type="image/x-icon" href="ass/vico/lg.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* 新增的快速链接样式 */
+        .quick-nav {
+            background-color: #f8f9fa;
+            padding: 15px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .quick-nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .quick-nav-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .quick-nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .quick-nav-link {
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        
+        .quick-nav-link:hover {
+            color: #007bff;
+        }
+        
+        .quick-nav-link.active {
+            color: #007bff;
+            font-weight: 500;
+        }
+        
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .quick-nav-links {
+                gap: 15px;
+            }
+            
+            .quick-nav-link {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-feather-pointed"></i>
+                <span data-translate="home">凌翼</span>
+            </a>
+            
+            <ul class="nav-menu">
+                <li><a href="index.html" target="_blank" class="nav-link">首页</a></li>
+                <li><a href="features.html" target="_blank" class="nav-link">项目特色</a></li>
+                <li><a href="team.html" target="_blank" class="nav-link">团队成员</a></li>
+                <li><a href="about.html" target="_blank" class="nav-link active">关于我们</a></li>
+            </ul>
+            
+            <div class="control-buttons">
+                <button class="theme-toggle">
+                    <i class="fas fa-sun sun"></i>
+                    <i class="fas fa-moon moon"></i>
+                </button>
+            </div>
+            
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- 移动端菜单 -->
+        <div class="mobile-menu">
+            <ul class="nav-menu">
+                <li><a href="index.html" target="_blank" class="nav-link">首页</a></li>
+                <li><a href="features.html" target="_blank" class="nav-link">项目特色</a></li>
+                <li><a href="team.html" target="_blank" class="nav-link">团队成员</a></li>
+                <li><a href="about.html" target="_blank" class="nav-link active">关于我们</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="main-content">
+        <!-- 页面标题区域 -->
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title" data-translate="about">关于我们</h1>
+                <p class="page-subtitle">
+                    致力于通过技术创新改善独居老人的生活质量，让科技温暖每一个家庭
+                </p>
+            </div>
+        </section>
+
+        <!-- 团队介绍区域 -->
+        <section class="team-intro-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 data-translate="teamIntro">团队介绍</h2>
+                    <p>专业的技术团队，卓力的杰出教授，创新的解决方案</p>
+                </div>
+                
+                <div class="intro-content">
+                    <div class="intro-text">
+                        <h3>轻量化独居老人监护助手项目团队</h3>
+                        <p>
+                            我们是一支专注于计算机大数据技术的创新团队，暂由来自大数据技术领域
+                            的专业人士组成。团队致力于通过先进的技术手段，为独居老人提供全方
+                            位的智能监护。
+                        </p>
+                        <p>
+                            我们的使命是利用大数据技术，构建一个安全、智能、人性化的老人监护系统，
+                            让科技真正服务于老年人的生活需求，提升他们的生活质量和安全感。
+                        </p>
+                        
+                        <div class="team-stats">
+                            <div class="stat-item">
+                                <div class="stat-number" data-target="0">0</div>
+                                <div class="stat-label">年技术积累</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" data-target="2">0</div>
+                                <div class="stat-label">成功项目</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" data-target="0">0</div>
+                                <div class="stat-label">服务用户</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" data-target="0">0</div>
+                                <div class="stat-label">准确率</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="intro-visual">
+                        <div class="visual-card">
+                            <i class="fas fa-rocket"></i>
+                            <h4>创新驱动</h4>
+                            <p>持续的技术创新和产品迭代</p>
+                        </div>
+                        <div class="visual-card">
+                            <i class="fas fa-users"></i>
+                            <h4>用户至上</h4>
+                            <p>以用户需求为导向的产品设计</p>
+                        </div>
+                        <div class="visual-card">
+                            <i class="fas fa-shield-alt"></i>
+                            <h4>安全可靠</h4>
+                            <p>严格的数据安全和隐私保护</p>
+                        </div>
+                        <div class="visual-card">
+                            <i class="fas fa-hand-holding-heart"></i>
+                            <h4>社会责任</h4>
+                            <p>用科技回馈社会的企业使命</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 面试测试要求区域 -->
+        <section class="interview-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>面试测试要求</h2>
+                    <p>加入我们团队的技术要求和面试流程</p>
+                </div>
+                
+                <div class="interview-content">
+                    <div class="requirements-card">
+                        <h3>技术岗位面试要求</h3>
+                        <div class="requirements-list">
+                            <div class="requirement-item">
+                                <i class="fas fa-code"></i>
+                                <div>
+                                    <h4>编程能力测试</h4>
+                                    <p>要会基础的烧录，改写代码等技术</p>
+                                </div>
+                            </div>
+                            <div class="requirement-item">
+                                <i class="fas fa-project-diagram"></i>
+                                <div>
+                                    <h4>项目经验评估</h4>
+                                    <p>有项目经验者优先，网络项目或实际项目均可，实际项目需提供项目视频</p>
+                                </div>
+                            </div>
+                            <div class="requirement-item">
+                                <i class="fas fa-brain"></i>
+                                <div>
+                                    <h4>技术深度考察</h4>
+                                    <p>专业知识深度、技术视野、学习能力</p>
+                                </div>
+                            </div>
+                            <div class="requirement-item">
+                                <i class="fas fa-users"></i>
+                                <div>
+                                    <h4>团队协作能力</h4>
+                                    <p>沟通能力、团队合作精神、项目管理经验</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="download-section">
+                            <h4>下载面试资料</h4>
+                            <p>包含详细的技术要求、面试流程和准备指南</p>
+                            <button class="download-btn" onclick="downloadInterviewGuide()">
+                                <i class="fas fa-download"></i>
+                                <span>下载面试指南 (DOCX)</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="process-timeline">
+                        <h3>面试流程</h3>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-marker">1</div>
+                                <div class="timeline-content">
+                                    <h5>简历筛选</h5>
+                                    <p>收到简历后1个工作日内完成初步筛选</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker">2</div>
+                                <div class="timeline-content">
+                                    <h5>技术在线测试</h5>
+                                    <p>在线编程测试知识考核</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker">3</div>
+                                <div class="timeline-content">
+                                    <h5>技术面试</h5>
+                                    <p>与项目负责人进行深入的技术交流</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker">4</div>
+                                <div class="timeline-content">
+                                    <h5>综合面试</h5>
+                                    <p>与项目负责人进行综合能力评估</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker">5</div>
+                                <div class="timeline-content">
+                                    <h5>录用通知</h5>
+                                    <p>面试通过后3个工作日内发放录用通知</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 联系信息区域 -->
+        <section class="contact-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 data-translate="contactInfo">联系信息</h2>
+                    <p>欢迎与我们联系，共同探讨合作机会</p>
+                </div>
+                
+                <div class="contact-grid">
+                    <div class="contact-card">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h4 data-translate="address">地址 - 1</h4>
+                        <p>新疆农业职业技术大学<br>信息技术分院</p>
+                    </div>
+
+                    <div class="contact-card">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h4 data-translate="address">地址 - 2</h4>
+                        <p>新疆农业职业技术大学<br>大数据技术实训室（2104）</p>
+                    </div>
+                    
+                    <div class="contact-card">
+                        <i class="fas fa-envelope"></i>
+                        <h4 data-translate="email">邮箱地址</h4>
+                        <p>2171156701@qq.com<br>3430667576@qq.com</p>
+                    </div>
+                    
+                    <div class="contact-card">
+                        <i class="fas fa-clock"></i>
+                        <h4>办公时间</h4>
+                        <p>周一至周日：11:00-20:00<br>节假日正常休息</p>
+                    </div>
+                </div>
+                
+                <div class="contact-note">
+                    <p>
+                        <strong>注意：</strong>如果您对我们的项目感兴趣，或者有任何技术合作的需求，
+                        欢迎通过以上方式与我们联系。我们会在收到信息后尽快回复您。
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+
+        <div class="quick-nav">
+            <div class="quick-nav-container">
+                <div class="quick-nav-links">
+                    <a href="index.html" target="_blank" class="quick-nav-link">首页</a>
+                    <a href="features.html" target="_blank" class="quick-nav-link">项目特色</a>
+                    <a href="team.html" target="_blank" class="quick-nav-link">团队成员</a>
+                    <a href="about.html" target="_blank" class="quick-nav-link active">关于我们</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-content">
+            <div class="copyright">
+                2026©️ 轻量化独居老人大数据监护助手项目 版权归 <a href="../tools/index.html" target="_blank">tools world</a> 所有
+            </div>
+            
+            <div class="friend-links">
+                <div class="friend-links-dropdown">
+                    <button class="friend-links-toggle" id="friendLinksToggle">
+                        <span>友情链接</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="friend-links-menu" id="friendLinksMenu">
+                        <a href="../R.kya/index.html" target="_blank" class="friend-link">Riya摄影馆</a>
+                        <a href="../tools/index.html" target="_blank" class="friend-link">tools world</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script src="js/about.js"></script>
+
+    <script>
+        // 快速链接的交互效果
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取所有快速链接
+            const quickLinks = document.querySelectorAll('.quick-nav-link');
+            
+            // 为每个链接添加点击事件
+            quickLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    // 移除所有链接的active类
+                    quickLinks.forEach(l => l.classList.remove('active'));
+                    // 为当前点击的链接添加active类
+                    this.classList.add('active');
+                });
+            });
+            
+            // 保持与页面当前状态的同步
+            const currentPage = window.location.pathname.split('/').pop();
+            if (currentPage === 'features.html' || currentPage === '') {
+                document.querySelector('.quick-nav-link[href="features.html"]').classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>

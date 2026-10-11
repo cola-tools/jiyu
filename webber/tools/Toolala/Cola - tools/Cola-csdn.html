@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="可以获取实时CSDN文章热度榜，可以有效节省时间查看CSDN热度榜单内容">
+    <meta name="keywords" content="想要有趣而又好玩的工具，就来Toolala">
+     <link rel="shortcut icon" href="../assets/vico/main.ico" type="image/x-icon">
+    <title>CSDN热度榜 - Toolala工具站</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #FF5722;
+            --secondary-color: #2196F3;
+            --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            --gradient-secondary: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+            --text-color: #333;
+            --light-text: #f8f8f8;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            color: var(--text-color);
+            line-height: 1.6;
+            background: #f5f5f5;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 4px;
+            background: var(--gradient-primary);
+            margin: 15px auto;
+            border-radius: 2px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--light-text);
+            opacity: 0.8;
+        }
+
+        .refresh-btn {
+            background: var(--gradient-primary);
+            color: #1a1a1a;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(255, 87, 34, 0.4);
+        }
+
+        .refresh-btn i {
+            margin-right: 8px;
+        }
+
+        .hot-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .hot-item {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            border: 1px solid rgba(33, 150, 243, 0.1);
+        }
+
+        .hot-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .hot-image {
+            height: 180px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hot-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .hot-item:hover .hot-image img {
+            transform: scale(1.05);
+        }
+
+        .hot-rank {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: var(--primary-color);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .hot-content {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hot-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        .hot-title a {
+            color: var(--text-color);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .hot-title a:hover {
+            color: var(--primary-color);
+        }
+
+        .hot-author {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .hot-author i {
+            margin-right: 5px;
+            color: var(--secondary-color);
+        }
+
+        .hot-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .hot-stat {
+            display: flex;
+            align-items: center;
+        }
+
+        .hot-stat i {
+            margin-right: 5px;
+            color: var(--primary-color);
+        }
+
+        .hot-value {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .hot-hotness {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .hot-hotness i {
+            margin-right: 5px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 87, 34, 0.2);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--light-text);
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .hot-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .refresh-btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .hot-image {
+                height: 150px;
+            }
+            
+            .hot-content {
+                padding: 15px;
+            }
+            
+            .hot-title {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient-primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    
+    <div class="container">
+        <header>
+            <h1>CSDN热度总榜</h1>
+            <p class="subtitle">实时获取CSDN平台最热门的技术文章和话题</p>
+        </header>
+        
+        <button id="refreshBtn" class="refresh-btn">
+            <i class="fas fa-sync-alt"></i> 刷新榜单
+        </button>
+        
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>正在获取最新热度榜单...</p>
+        </div>
+        
+        <div id="hotList" class="hot-list"></div>
+        
+        <footer>
+            <p>© 2025 CSDN热度总榜 | 数据仅供参考 | Toolala工具站</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化粒子效果
+        document.addEventListener('DOMContentLoaded', function() {
+            particlesJS('particles-js', {
+                "particles": {
+                    "number": {
+                        "value": 80,
+                        "density": {
+                            "enable": true,
+                            "value_area": 800
+                        }
+                    },
+                    "color": {
+                        "value": ["#FF5722", "#2196F3"]
+                    },
+                    "shape": {
+                        "type": "circle",
+                        "stroke": {
+                            "width": 0,
+                            "color": "#000000"
+                        },
+                        "polygon": {
+                            "nb_sides": 5
+                        }
+                    },
+                    "opacity": {
+                        "value": 0.5,
+                        "random": true,
+                        "anim": {
+                            "enable": true,
+                            "speed": 1,
+                            "opacity_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "size": {
+                        "value": 3,
+                        "random": true,
+                        "anim": {
+                            "enable": true,
+                            "speed": 2,
+                            "size_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "line_linked": {
+                        "enable": true,
+                        "distance": 150,
+                        "color": "#FF5722",
+                        "opacity": 0.4,
+                        "width": 1
+                    },
+                    "move": {
+                        "enable": true,
+                        "speed": 1,
+                        "direction": "none",
+                        "random": true,
+                        "straight": false,
+                        "out_mode": "out",
+                        "bounce": false,
+                        "attract": {
+                            "enable": true,
+                            "rotateX": 600,
+                            "rotateY": 1200
+                        }
+                    }
+                },
+                "interactivity": {
+                    "detect_on": "canvas",
+                    "events": {
+                        "onhover": {
+                            "enable": true,
+                            "mode": "grab"
+                        },
+                        "onclick": {
+                            "enable": true,
+                            "mode": "push"
+                        },
+                        "resize": true
+                    },
+                    "modes": {
+                        "grab": {
+                            "distance": 140,
+                            "line_linked": {
+                                "opacity": 1
+                            }
+                        },
+                        "bubble": {
+                            "distance": 400,
+                            "size": 40,
+                            "duration": 2,
+                            "opacity": 8,
+                            "speed": 3
+                        },
+                        "repulse": {
+                            "distance": 200,
+                            "duration": 0.4
+                        },
+                        "push": {
+                            "particles_nb": 4
+                        },
+                        "remove": {
+                            "particles_nb": 2
+                        }
+                    }
+                },
+                "retina_detect": true
+            });
+            
+            // 初始加载数据
+            fetchHotList();
+            
+            // 绑定刷新按钮事件
+            document.getElementById('refreshBtn').addEventListener('click', fetchHotList);
+        });
+
+        // 获取热度榜单
+        function fetchHotList() {
+            const loadingElement = document.getElementById('loading');
+            const hotListElement = document.getElementById('hotList');
+            
+            // 显示加载状态
+            loadingElement.style.display = 'block';
+            hotListElement.innerHTML = '';
+            
+            fetch('https://v2.xxapi.cn/api/csdnhot')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应不正常');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.code === 200) {
+                        displayHotList(data.data);
+                    } else {
+                        throw new Error(data.msg || '获取数据失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取热度榜单错误:', error);
+                    hotListElement.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 15px;"></i>
+                            <p>获取热度榜单失败: ${error.message}</p>
+                            <button onclick="fetchHotList()" style="margin-top: 15px; background: var(--gradient-primary); color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer;">
+                                重试
+                            </button>
+                        </div>
+                    `;
+                })
+                .finally(() => {
+                    loadingElement.style.display = 'none';
+                });
+        }
+
+        // 显示热度榜单
+        function displayHotList(hotList) {
+            const hotListElement = document.getElementById('hotList');
+            hotListElement.innerHTML = '';
+            
+            if (!hotList || hotList.length === 0) {
+                hotListElement.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-info-circle" style="font-size: 2rem; color: var(--secondary-color); margin-bottom: 15px;"></i>
+                        <p>暂无热度数据</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            hotList.forEach((item, index) => {
+                const hotItem = document.createElement('div');
+                hotItem.className = 'hot-item';
+                hotItem.innerHTML = `
+                    <div class="hot-image">
+                        <span class="hot-rank">${index + 1}</span>
+                        <img src="${item.pic || 'https://via.placeholder.com/350x180?text=CSDN'}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/350x180?text=CSDN'">
+                    </div>
+                    <div class="hot-content">
+                        <h3 class="hot-title"><a href="${item.url}" target="_blank">${item.title}</a></h3>
+                        <div class="hot-author">
+                            <i class="fas fa-user"></i> ${item.nickName || '匿名用户'}
+                        </div>
+                        <div class="hot-stats">
+                            <div class="hot-stat">
+                                <i class="fas fa-eye"></i> <span class="hot-value">${item.viewCount || 0}</span>
+                            </div>
+                            <div class="hot-stat">
+                                <i class="fas fa-comment"></i> <span class="hot-value">${item.commentCount || 0}</span>
+                            </div>
+                            <div class="hot-stat">
+                                <i class="fas fa-heart"></i> <span class="hot-value">${item.favorCount || 0}</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; text-align: right;">
+                            <span class="hot-hotness">
+                                <i class="fas fa-fire"></i> ${formatNumber(item.hot) || 0} 热度
+                            </span>
+                        </div>
+                    </div>
+                `;
+                hotListElement.appendChild(hotItem);
+            });
+        }
+
+        // 格式化数字
+        function formatNumber(num) {
+            if (!num) return '0';
+            num = parseInt(num);
+            if (num >= 10000) {
+                return (num / 10000).toFixed(1) + '万';
+            }
+            return num.toString();
+        }
+    </script>
+</body>
+</html>

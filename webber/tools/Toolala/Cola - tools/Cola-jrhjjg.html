@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="实时获取每日黄金价格，能够让你选对购黄金的时间！">
+    <meta name="keywords" content="想要有趣而又好玩的工具，就来Toolala">
+     <link rel="shortcut icon" href="../assets/vico/main.ico" type="image/x-icon">
+    <title>今日黄金价格 - Toolala工具站</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <style>
+        :root {
+            --gold-primary: linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #CFB53B 100%);
+            --silver-primary: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 50%, #909090 100%);
+            --text-color: #333;
+            --light-text: #f8f8f8;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            color: var(--text-color);
+            line-height: 1.6;
+            background: #f5f5f5;
+            overflow-x: hidden;
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 4px;
+            background: var(--gold-primary);
+            margin: 15px auto;
+            border-radius: 2px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: var(--gold-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--light-text);
+            opacity: 0.8;
+        }
+
+        .refresh-btn {
+            background: var(--gold-primary);
+            color: #1a1a1a;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            font-size: 1rem;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(212, 175, 55, 0.4);
+        }
+
+        .refresh-btn i {
+            margin-right: 8px;
+        }
+
+        .price-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .price-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .price-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .price-card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #D4AF37;
+            display: flex;
+            align-items: center;
+        }
+
+        .price-card h2 i {
+            margin-right: 10px;
+        }
+
+        .price-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .price-item:last-child {
+            border-bottom: none;
+        }
+
+        .price-name {
+            font-weight: 500;
+            color: #555;
+        }
+
+        .price-value {
+            font-weight: 700;
+            background: var(--gold-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .chart-container h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #D4AF37;
+            display: flex;
+            align-items: center;
+        }
+
+        .chart-container h2 i {
+            margin-right: 10px;
+        }
+
+        .last-update {
+            text-align: center;
+            color: var(--light-text);
+            opacity: 0.7;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(212, 175, 55, 0.2);
+            border-top-color: #D4AF37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--light-text);
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .price-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .price-card {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .refresh-btn {
+                padding: 8px 20px;
+                font-size: 0.9rem;
+            }
+            
+            .price-card h2, .chart-container h2 {
+                font-size: 1.3rem;
+            }
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gold-primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #D4AF37;
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    
+    <div class="container">
+        <header>
+            <h1>一日黄金价格查询系统</h1>
+            <p class="subtitle">获取最新银行金条、黄金回收及珠宝品牌价格</p>
+        </header>
+        
+        <button id="refreshBtn" class="refresh-btn">
+            <i>🔄</i> 刷新数据
+        </button>
+        
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>正在获取最新黄金价格数据...</p>
+        </div>
+        
+        <div class="price-container">
+            <div class="price-card">
+                <h2><i>🏦</i> 银行投资金条</h2>
+                <div id="bankGoldPrices"></div>
+            </div>
+            
+            <div class="price-card">
+                <h2><i>♻️</i> 黄金回收价格</h2>
+                <div id="goldRecyclePrices"></div>
+            </div>
+            
+            <div class="price-card">
+                <h2><i>💎</i> 珠宝品牌价格</h2>
+                <div id="preciousMetalPrices"></div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h2><i>📊</i> 银行金条价格对比</h2>
+            <canvas id="goldChart"></canvas>
+        </div>
+        
+        <p id="lastUpdate" class="last-update">最后更新时间: 加载中...</p>
+        
+        <footer>
+            <p>© 2025 黄金价格查询系统 | 数据仅供参考 | Toolala工具站</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化粒子效果
+        document.addEventListener('DOMContentLoaded', function() {
+            particlesJS('particles-js', {
+                "particles": {
+                    "number": {
+                        "value": 80,
+                        "density": {
+                            "enable": true,
+                            "value_area": 800
+                        }
+                    },
+                    "color": {
+                        "value": "#D4AF37"
+                    },
+                    "shape": {
+                        "type": "circle",
+                        "stroke": {
+                            "width": 0,
+                            "color": "#000000"
+                        },
+                        "polygon": {
+                            "nb_sides": 5
+                        }
+                    },
+                    "opacity": {
+                        "value": 0.5,
+                        "random": true,
+                        "anim": {
+                            "enable": true,
+                            "speed": 1,
+                            "opacity_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "size": {
+                        "value": 3,
+                        "random": true,
+                        "anim": {
+                            "enable": true,
+                            "speed": 2,
+                            "size_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "line_linked": {
+                        "enable": true,
+                        "distance": 150,
+                        "color": "#D4AF37",
+                        "opacity": 0.4,
+                        "width": 1
+                    },
+                    "move": {
+                        "enable": true,
+                        "speed": 1,
+                        "direction": "none",
+                        "random": true,
+                        "straight": false,
+                        "out_mode": "out",
+                        "bounce": false,
+                        "attract": {
+                            "enable": true,
+                            "rotateX": 600,
+                            "rotateY": 1200
+                        }
+                    }
+                },
+                "interactivity": {
+                    "detect_on": "canvas",
+                    "events": {
+                        "onhover": {
+                            "enable": true,
+                            "mode": "grab"
+                        },
+                        "onclick": {
+                            "enable": true,
+                            "mode": "push"
+                        },
+                        "resize": true
+                    },
+                    "modes": {
+                        "grab": {
+                            "distance": 140,
+                            "line_linked": {
+                                "opacity": 1
+                            }
+                        },
+                        "bubble": {
+                            "distance": 400,
+                            "size": 40,
+                            "duration": 2,
+                            "opacity": 8,
+                            "speed": 3
+                        },
+                        "repulse": {
+                            "distance": 200,
+                            "duration": 0.4
+                        },
+                        "push": {
+                            "particles_nb": 4
+                        },
+                        "remove": {
+                            "particles_nb": 2
+                        }
+                    }
+                },
+                "retina_detect": true
+            });
+            
+            // 初始加载数据
+            fetchGoldPrices();
+            
+            // 绑定刷新按钮事件
+            document.getElementById('refreshBtn').addEventListener('click', fetchGoldPrices);
+        });
+
+        // 图表变量
+        let goldChart;
+
+        // 获取黄金价格数据
+        function fetchGoldPrices() {
+            const loadingElement = document.getElementById('loading');
+            const contentElements = document.querySelectorAll('.price-container, .chart-container');
+            
+            // 显示加载状态
+            loadingElement.style.display = 'block';
+            contentElements.forEach(el => el.style.opacity = '0.5');
+            
+            fetch('https://v2.xxapi.cn/api/goldprice')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应不正常');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.code === 200) {
+                        displayGoldPrices(data.data);
+                        updateChart(data.data.bank_gold_bar_price);
+                        updateLastUpdate(data.data);
+                    } else {
+                        throw new Error(data.msg || '获取数据失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取黄金价格错误:', error);
+                    alert('获取黄金价格失败: ' + error.message);
+                })
+                .finally(() => {
+                    loadingElement.style.display = 'none';
+                    contentElements.forEach(el => el.style.opacity = '1');
+                });
+        }
+
+        // 显示黄金价格数据
+        function displayGoldPrices(data) {
+            // 银行金条价格
+            const bankGoldContainer = document.getElementById('bankGoldPrices');
+            bankGoldContainer.innerHTML = '';
+            data.bank_gold_bar_price.forEach(item => {
+                const priceItem = document.createElement('div');
+                priceItem.className = 'price-item';
+                priceItem.innerHTML = `
+                    <span class="price-name">${item.bank}</span>
+                    <span class="price-value">¥${item.price}</span>
+                `;
+                bankGoldContainer.appendChild(priceItem);
+            });
+            
+            // 黄金回收价格
+            const recycleContainer = document.getElementById('goldRecyclePrices');
+            recycleContainer.innerHTML = '';
+            data.gold_recycle_price.forEach(item => {
+                const priceItem = document.createElement('div');
+                priceItem.className = 'price-item';
+                priceItem.innerHTML = `
+                    <span class="price-name">${item.gold_type}</span>
+                    <span class="price-value">¥${item.recycle_price}</span>
+                `;
+                recycleContainer.appendChild(priceItem);
+            });
+            
+            // 珠宝品牌价格
+            const metalContainer = document.getElementById('preciousMetalPrices');
+            metalContainer.innerHTML = '';
+            data.precious_metal_price.forEach(item => {
+                const priceItem = document.createElement('div');
+                priceItem.className = 'price-item';
+                priceItem.innerHTML = `
+                    <span class="price-name">${item.brand} (黄金)</span>
+                    <span class="price-value">¥${item.gold_price}</span>
+                `;
+                metalContainer.appendChild(priceItem);
+            });
+        }
+
+        // 更新图表
+        function updateChart(bankData) {
+            const ctx = document.getElementById('goldChart').getContext('2d');
+            
+            // 如果图表已存在，先销毁
+            if (goldChart) {
+                goldChart.destroy();
+            }
+            
+            // 准备图表数据
+            const labels = bankData.map(item => item.bank.replace(/金条|银行|投资/g, ''));
+            const prices = bankData.map(item => parseFloat(item.price));
+            
+            goldChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '价格 (元)',
+                        data: prices,
+                        backgroundColor: 'rgba(212, 175, 55, 0.7)',
+                        borderColor: 'rgba(212, 175, 55, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '价格: ¥' + context.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 更新最后更新时间
+        function updateLastUpdate(data) {
+            // 从各个数据中找出最新的日期
+            const dates = [];
+            
+            // 检查银行金条数据
+            if (data.bank_gold_bar_price && data.bank_gold_bar_price.length > 0) {
+                dates.push(new Date());
+            }
+            
+            // 检查回收价格数据
+            if (data.gold_recycle_price && data.gold_recycle_price.length > 0) {
+                const recycleDates = data.gold_recycle_price.map(item => new Date(item.updated_date));
+                dates.push(...recycleDates);
+            }
+            
+            // 检查珠宝品牌数据
+            if (data.precious_metal_price && data.precious_metal_price.length > 0) {
+                const metalDates = data.precious_metal_price.map(item => new Date(item.updated_date));
+                dates.push(...metalDates);
+            }
+            
+            // 找出最新日期
+            if (dates.length > 0) {
+                const latestDate = new Date(Math.max(...dates));
+                document.getElementById('lastUpdate').textContent = `最后更新时间: ${formatDate(latestDate)}`;
+            } else {
+                document.getElementById('lastUpdate').textContent = '最后更新时间: 未知';
+            }
+        }
+
+        // 格式化日期
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        }
+    </script>
+</body>
+</html>

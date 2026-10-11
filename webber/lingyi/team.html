@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>团队成员 - 轻量化独居老人大数据监护助手</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/team.css">
+    <link rel="icon" type="image/x-icon" href="ass/vico/lg.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* 新增的快速链接样式 */
+        .quick-nav {
+            background-color: #f8f9fa;
+            padding: 15px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .quick-nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .quick-nav-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .quick-nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .quick-nav-link {
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        
+        .quick-nav-link:hover {
+            color: #007bff;
+        }
+        
+        .quick-nav-link.active {
+            color: #007bff;
+            font-weight: 500;
+        }
+        
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .quick-nav-links {
+                gap: 15px;
+            }
+            
+            .quick-nav-link {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" target="_blank" class="logo">
+               <i class="fas fa-feather-pointed"></i>
+                <span data-translate="home">凌翼</span>
+            </a>
+            
+            <ul class="nav-menu">
+                <li><a href="index.html" target="_blank" class="nav-link">首页</a></li>
+                <li><a href="features.html" target="_blank" class="nav-link">项目特色</a></li>
+                <li><a href="team.html" target="_blank" class="nav-link active">团队成员</a></li>
+                <li><a href="about.html" target="_blank" class="nav-link">关于我们</a></li>
+            </ul>
+            
+            <div class="control-buttons">
+                <button class="theme-toggle">
+                    <i class="fas fa-sun sun"></i>
+                    <i class="fas fa-moon moon"></i>
+                </button>
+            </div>
+            
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- 移动端菜单 -->
+        <div class="mobile-menu">
+            <ul class="nav-menu">
+                <li><a href="index.html" target="_blank" class="nav-link">首页</a></li>
+                <li><a href="features.html" target="_blank" class="nav-link">项目特色</a></li>
+                <li><a href="team.html" target="_blank" class="nav-link active">团队成员</a></li>
+                <li><a href="about.html" target="_blank" class="nav-link">关于我们</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="main-content">
+        <!-- 页面标题区域 -->
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title" data-translate="team"> 凌翼智算 </h1>
+                <p class="page-subtitle">
+                    凌翼是现创的项目型团队，主要以创新创业为核心，深造社会需求性项目，为个人和社会发展做出贡献；
+                    凌翼智算是以创新在身，创业深造，服务于民的主旨进行发展
+                </p>
+            </div>
+        </section>
+
+        <!-- 团队团长区域 -->
+        <section class="team-leader-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 data-translate="teamLeader">团队团长</h2>
+                    <p>项目核心领导，负责整体规划与战略决策</p>
+                </div>
+                
+                <div class="leader-card">
+                    <div class="leader-photo">
+                        <img src="ass/image/team.png" width='100' height='200' alt="团队团长" />
+                    </div>
+                    <div class="leader-info">
+                        <h3>伊力扎提·司马依力</h3>
+                        <p class="leader-title">项目总负责人</p>
+                        <p class="leader-description">
+                            深造计算机领域，同时具备web，python，计算机网络等计算机技术
+                            接触计算机近3年，在接触计算机以来，以多项技术为核心，学基础技术，现在深造大数据相关技术
+                        </p>
+                        <div class="leader-tags">
+                            <span class="tag">技术总架构师</span>
+                            <span class="tag">项目管理</span>
+                            <span class="tag">创新领导</span>
+                        </div>
+                        <div class="leader-contact">
+                            <span><i class="fas fa-envelope"></i> 3430667576@qq.com </span>
+                            <span><i class="fas fa-envelope"></i> 2171156701@qq.com </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 团队成员区域 -->
+        <section class="team-members-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 data-translate="teamMember">团队成员</h2>
+                    <p>以学生为核心主力，为创新创业，项目深造做结实铺垫，为学生个人发展和团队发展做出主力贡献</p>
+                </div>
+                
+                <div class="members-grid">
+                    
+                    
+
+                    <div class="member-card">
+                        <div class="member-photo">
+                            <img src="ass/image/student.png" alt="冶子浩" />
+                        </div>
+                        <h4>冶子浩</h4>
+                        <p class="member-role">方案策划师</p>
+                        <p class="member-description">负责整个项目方案的制定与策划，与项目负责人，项目编辑者以及其他核心成员共同策划项目</p>
+                        <div class="member-tags">
+                            <span class="tag">项目模型策划</span>
+                            <span class="tag">项目软硬件策划</span>
+                            <span class="tag">项目架构策划</span>
+                        </div>
+                    </div>
+                    
+                    <div class="member-card">
+                        <div class="member-photo">
+                            <img src="ass/image/student.png" alt="叶丽娜" />
+                        </div>
+                        <h4>叶丽娜</h4>
+                        <p class="member-role">设计架构师</p>
+                        <p class="member-description">负责对项目模拟架构，实体架构进行构造，对后期用户反馈进行二次架构设计等</p>
+                        <div class="member-tags">
+                            <span class="tag">核心架构设计</span>
+                            <span class="tag">二次架构高创</span>
+                            <span class="tag">用户体验分析</span>
+                        </div>
+                    </div>
+
+                    <div class="member-card">
+                        <div class="member-photo">
+                            <img src="ass/image/student.png" alt="茹克亚木·努尔麦麦提" />
+                        </div>
+                        <h4>茹克亚木·努尔麦麦提</h4>
+                        <p class="member-role">软硬件对接 </p>
+                        <p class="member-description">负责通过架构分析，项目策划后的结果，进行软硬件的成品对接，包括软件接线，硬件烧录等等</p>
+                        <div class="member-tags">
+                            <span class="tag">软件接线</span>
+                            <span class="tag">硬件烧录</span>
+                            <span class="tag">两者对接</span>
+                        </div>
+                    </div>
+
+                    <div class="member-card">
+                        <div class="member-photo">
+                            <img src="ass/image/student.png" alt="苏比努尔·艾力" />
+                        </div>
+                        <h4>苏比努尔·艾力</h4>
+                        <p class="member-role">软硬件采购</p>
+                        <p class="member-description">负责按照项目策划以及架构，确定软件采购，硬件烧录程序查询，提供等等</p>
+                        <div class="member-tags">
+                            <span class="tag">软件采购</span>
+                            <span class="tag">硬件查找</span>
+                            <span class="tag">软硬结合</span>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 指导教师区域 -->
+        <section class="instructors-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 data-translate="instructor">指导教师</h2>
+                    <p>经验丰富的指导老师，为项目提供专业指导和支持</p>
+                </div>
+                
+                <div class="instructors-grid">
+                    <!-- 指导教师1 -->
+                    <div class="instructor-card">
+                        <div class="instructor-photo">
+                            <img src="ass/image/tea.png" alt="蒋老师"  width="250px" height="250px"/>
+                        </div>
+                        <h4>蒋老师</h4>
+                        <p class="instructor-title">信息技术学院</p>
+                        <p class="instructor-description">对项目规划，项目指导有经验丰富，为项目定向有大力帮助等等</p>
+                        <div class="instructor-tags">
+                            <span class="tag">项目顾问</span>
+                            <span class="tag">项目指导</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 指导教师2 -->
+                    <div class="instructor-card">
+                        <div class="instructor-photo">
+                           <img src="ass/image/tea.png" alt="槐老师"  width="250px" height="250px"/>
+                        </div>
+                        <h4>槐老师</h4>
+                        <p class="instructor-title">信息技术学院</p>
+                        <p class="instructor-description">对创新创业经验丰富，为创业规划以及创新指导有卓越能力等等</p>
+                        <div class="instructor-tags">
+                            <span class="tag">创新指导</span>
+                            <span class="tag">创业指导</span>
+                            <span class="tag">职业指导</span>
+                        </div>
+                    </div>
+
+                    <!-- 指导教师3 -->
+                    <div class="instructor-card">
+                        <div class="instructor-photo">
+                            <img src="ass/image/tea.png" alt="彭老师"  width="250px" height="250px"/>
+                        </div>
+                        <h4>彭老师</h4>
+                        <p class="instructor-title">信息技术学院</p>
+                        <p class="instructor-description">精通多项计算机技术，现主要课程有Linux操作系统管理与运维，至今获50+项证书等等</p>
+                        <div class="instructor-tags">
+                            <span class="tag">技术顾问</span>
+                            <span class="tag">逻辑寻道</span>
+                            <span class="tag">架构顾问</span>
+                        </div>
+                    </div>
+
+                    <!-- 指导教师4 -->
+                    <div class="instructor-card">
+                        <div class="instructor-photo">
+                           <img src="ass/image/tea.png" alt="沈老师" width="250px" height="250px"/>
+                        </div>
+                        <h4>沈老师</h4>
+                        <p class="instructor-title">信息技术学院</p>
+                        <p class="instructor-description">精通计算机多项技术，主要有应用基础，ESP单片机开发，多种计算机高级语言等等</p>
+                        <div class="instructor-tags">
+                            <span class="tag">核心顾问</span>
+                            <span class="tag">逻辑顾问</span>
+                            <span class="tag">思路顾问</span>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </section>
+
+   
+
+        <!-- 核心项目区域 -->
+
+        <!--
+        <section class="core-projects-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>团队核心项目</h2>
+                    <p>团队参与的重要项目与研究成果</p>
+                </div>
+                
+                <div class="projects-grid">  -->
+                  
+                    <!-- 项目1 -->
+                     <!--
+                    <div class="project-card">
+                        <div class="project-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="project-info">
+                            <h4>智能健康监护系统</h4>
+                            <div class="project-tags">
+                                <span class="tag">人工智能</span>
+                                <span class="tag">大数据</span>
+                                <span class="tag">医疗健康</span>
+                            </div>
+                            <p class="project-description">基于AI的老年人健康监护平台，实现智能预警和远程监护。</p>
+                            <div class="project-meta">
+                                <span><i class="fas fa-calendar"></i> 2025-2026</span>
+                                <span><i class="fas fa-tag"></i> 国家级项目</span>
+                            </div>
+                        </div>
+                    </div>  
+                     -->
+                    
+                    <!-- 项目2 -->
+
+                    <!--
+                    <div class="project-card">
+                        <div class="project-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="project-info">
+                            <h4>养老大数据分析平台</h4>
+                            <div class="project-tags">
+                                <span class="tag">数据分析</span>
+                                <span class="tag">云计算</span>
+                                <span class="tag">可视化</span>
+                            </div>
+                            <p class="project-description">面向养老服务的大数据分析与决策支持系统。</p>
+                            <div class="project-meta">
+                                <span><i class="fas fa-calendar"></i> 2024-2025</span>
+                                <span><i class="fas fa-tag"></i> 省部级项目</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    -->
+                    
+                    <!-- 项目3 -->
+                    <!--
+                    <div class="project-card">
+                        <div class="project-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="project-info">
+                            <h4>移动健康应用开发</h4>
+                            <div class="project-tags">
+                                <span class="tag">移动开发</span>
+                                <span class="tag">用户体验</span>
+                                <span class="tag">健康管理</span>
+                            </div>
+                            <p class="project-description">面向老年人的友好型健康管理移动应用。</p>
+                            <div class="project-meta">
+                                <span><i class="fas fa-calendar"></i> 2023-2024</span>
+                                <span><i class="fas fa-tag"></i> 校企合作</span>
+                            </div>
+                        </div>
+                    </div>
+                -->
+
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+   <!-- 页脚 -->
+    <footer class="footer">
+
+        <div class="quick-nav">
+            <div class="quick-nav-container">
+                <div class="quick-nav-links">
+                    <a href="index.html" target="_blank" class="quick-nav-link">首页</a>
+                    <a href="features.html" target="_blank" class="quick-nav-link">项目特色</a>
+                    <a href="team.html" target="_blank" class="quick-nav-link active">团队成员</a>
+                    <a href="about.html" target="_blank" class="quick-nav-link">关于我们</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-content">
+            <div class="copyright">
+                2026©️ 轻量化独居老人大数据监护助手项目 版权归 <a href="https://colatools.cn/" target="_blank">tools world</a> 所有
+            </div>
+            
+            <div class="friend-links">
+                <div class="friend-links-dropdown">
+                    <button class="friend-links-toggle" id="friendLinksToggle">
+                        <span>友情链接</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="friend-links-menu" id="friendLinksMenu">
+                        <a href="../R.kya/index.html" target="_blank" class="friend-link">Riya摄影馆</a>
+                        <a href="../tools/index.html" target="_blank" class="friend-link">tools world</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script src="js/team.js"></script>
+
+    <script>
+        // 快速链接的交互效果
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取所有快速链接
+            const quickLinks = document.querySelectorAll('.quick-nav-link');
+            
+            // 为每个链接添加点击事件
+            quickLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    // 移除所有链接的active类
+                    quickLinks.forEach(l => l.classList.remove('active'));
+                    // 为当前点击的链接添加active类
+                    this.classList.add('active');
+                });
+            });
+            
+            // 保持与页面当前状态的同步
+            const currentPage = window.location.pathname.split('/').pop();
+            if (currentPage === 'features.html' || currentPage === '') {
+                document.querySelector('.quick-nav-link[href="features.html"]').classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>

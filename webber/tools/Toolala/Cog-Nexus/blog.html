@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cog Nexus - 团队</title>
+    <link rel="icon" type="image/x-icon" href="ass/vico/Cog Nexus.ico">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/particles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* 分页样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .page-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 15px;
+            margin: 0 3px;
+            background-color: rgb(255, 255, 255);
+            color: #000000;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .page-link:hover {
+            background-color: rgb(0, 0, 0);
+        }
+        
+        .page-link.active {
+            background-color: #4a90e2;
+        }
+        
+        .page-link.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        /* 动态内容过渡效果 */
+        .blog-posts {
+            transition: opacity 0.3s ease;
+        }
+        
+        .blog-post {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .blog-post.hidden {
+            display: none;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .page-link {
+                padding: 6px 12px;
+                font-size: 14px;
+                min-width: 35px;
+            }
+            
+            .pagination {
+                gap: 5px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .page-link {
+                padding: 5px 10px;
+                font-size: 13px;
+                min-width: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 粒子背景容器 -->
+    <div id="particles-js"></div>
+    
+    <!-- 内容容器 -->
+    <div class="container">
+        <header>
+            <div class="logo">
+             <i class="fas fa-cogs"></i>
+                <span>Cog Nexus</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="blog.html" class="active">动态</a></li>
+                    <li><a href="team.html" target="_blank">团队</a></li>
+                    <li><a href="about.html" target="_blank">关于团队</a></li>
+                </ul>
+            </nav>
+            <div class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <section class="page-header">
+                <h1>团队动态</h1>
+                <p>记录团队学习历程、项目进展和技术思考</p>
+            </section>
+            
+            <section class="blog-posts" id="blog-posts">
+                <!-- 动态内容将通过JavaScript动态显示 -->
+            </section>
+            
+            <div class="pagination" id="pagination">
+                <!-- 分页控件将通过JavaScript动态生成 -->
+            </div>
+        </main>
+        
+        <footer>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>联系创始人</h3>
+                    <p>邮箱: 3430667576@qq.com</p>
+                   
+                </div>
+                <div class="footer-section">
+                    <h3>关注消息</h3>
+                    <div class="social-links">
+                                <a href="#"><i class="fab fa-weixin"></i></a>
+                                <a href="#"><i class="fab fa-qq"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>快速链接</h3>
+                    <ul>
+                        <li><a href="index.html">首页</a></li>
+                        <li><a href="blog.html" target="_blank">动态</a></li>
+                        <li><a href="team.html" target="_blank">团队</a></li>
+                        <li><a href="about.html" target="_blank">关于团队</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Cog Nexus 团队 . 保留所有权利</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="js/particles.js"></script>
+    <script>
+        // 动态数据
+        const blogPosts = [
+            {
+                date: "2025-10-09",
+                category: "前端开发",
+                title: "Cog Nexus - 团队web站",
+                content: "Cog Nexus 是由大学生组成的有力技术团队，包括前端技术，大数据技术以及计算机基础等方面的专业技能和知识，探索新的技术趋势和解决方案。",
+                link: "#"
+            },
+            {
+                date: "2025-05-28",
+                category: "项目经验",
+                title: "Toolala 工具站",
+                content: "该工具站是有Cog Nexus团队创始人亲自创建的，用于分享和发现各种有用的工具；该网站注重于工具的发现，利用和安装。",
+                link: "#"
+            }
+        ];
+
+        // 分页配置
+        const postsPerPage = 5;
+        let currentPage = 1;
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            renderBlogPosts();
+            renderPagination();
+        });
+
+        // 渲染动态内容
+        function renderBlogPosts() {
+            const blogPostsContainer = document.getElementById('blog-posts');
+            blogPostsContainer.innerHTML = '';
+            
+            // 计算当前页的动态
+            const startIndex = (currentPage - 1) * postsPerPage;
+            const endIndex = Math.min(startIndex + postsPerPage, blogPosts.length);
+            const postsToShow = blogPosts.slice(startIndex, endIndex);
+            
+            // 添加淡入效果
+            blogPostsContainer.style.opacity = '0';
+            
+            setTimeout(() => {
+                // 渲染动态
+                postsToShow.forEach(post => {
+                    const postElement = document.createElement('div');
+                    postElement.className = 'blog-post';
+                    postElement.innerHTML = `
+                        <div class="post-meta">
+                            <span class="post-date"><i class="far fa-calendar"></i> ${post.date}</span>
+                            <span class="post-category"><i class="far fa-folder"></i> ${post.category}</span>
+                        </div>
+                        <h2 class="post-title">${post.title}</h2>
+                        <div class="post-content">
+                            <p>${post.content}</p>
+                        </div>
+                    `;
+                    blogPostsContainer.appendChild(postElement);
+                });
+                
+                // 恢复不透明度
+                blogPostsContainer.style.opacity = '1';
+            }, 100);
+        }
+
+        // 渲染分页控件
+        function renderPagination() {
+            const paginationContainer = document.getElementById('pagination');
+            paginationContainer.innerHTML = '';
+            
+            const totalPages = Math.ceil(blogPosts.length / postsPerPage);
+            
+            // 添加上一页按钮
+            const prevButton = document.createElement('a');
+            prevButton.href = '#';
+            prevButton.className = 'page-link';
+            prevButton.innerHTML = '<i class="fas fa-arrow-left"></i> 上一页';
+            if (currentPage === 1) {
+                prevButton.classList.add('disabled');
+            }
+            prevButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderBlogPosts();
+                    renderPagination();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+            
+            // 添加页码按钮
+            for (let i = 1; i <= totalPages; i++) {
+                const pageLink = document.createElement('a');
+                pageLink.href = '#';
+                pageLink.className = 'page-link';
+                if (i === currentPage) {
+                    pageLink.classList.add('active');
+                }
+                pageLink.textContent = i;
+                pageLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    currentPage = i;
+                    renderBlogPosts();
+                    renderPagination();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+                paginationContainer.appendChild(pageLink);
+            }
+            
+            // 添加下一页按钮
+            const nextButton = document.createElement('a');
+            nextButton.href = '#';
+            nextButton.className = 'page-link';
+            nextButton.innerHTML = '下一页 <i class="fas fa-arrow-right"></i>';
+            if (currentPage === totalPages) {
+                nextButton.classList.add('disabled');
+            }
+            nextButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderBlogPosts();
+                    renderPagination();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+        }
+    </script>
+    <script src="js/main.js"></script>
+</body>
+</html>

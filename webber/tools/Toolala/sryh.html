@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>宴会地点导航</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 50%, #f0f2f5 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 15px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 10;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            padding: 8px 0;
+        }
+
+        .address-card {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border-radius: 20px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            position: relative;
+            z-index: 10;
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .address-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .address-label {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .address-text {
+            font-size: 15px;
+            color: #334155;
+            line-height: 1.7;
+            font-weight: 500;
+        }
+
+        .map-container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 10;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .map-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .map-frame {
+            width: 100%;
+            height: 380px;
+            border: none;
+            display: block;
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 380px;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #f1f5f9 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .map-placeholder::before {
+            content: '🗺️';
+            font-size: 64px;
+            animation: bounce 2s ease-in-out infinite;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+        }
+
+        .map-placeholder::after {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            animation: ripple 2s ease-out infinite;
+        }
+
+        .map-placeholder p {
+            margin-top: 16px;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-btn {
+            width: 100%;
+            max-width: 600px;
+            padding: 18px 24px;
+            font-size: 17px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            z-index: 10;
+            animation: fadeInUp 0.6s ease-out 0.3s both;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.35);
+            overflow: hidden;
+        }
+
+        .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .nav-btn:hover::before {
+            left: 100%;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.45);
+        }
+
+        .nav-btn:active {
+            transform: translateY(-1px) scale(0.98);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-12px);
+            }
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0.5);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 15px 12px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .address-card {
+                padding: 16px 20px;
+            }
+
+            .address-text {
+                font-size: 14px;
+            }
+
+            .map-frame,
+            .map-placeholder {
+                height: 300px;
+            }
+
+            .nav-btn {
+                padding: 16px 20px;
+                font-size: 16px;
+            }
+
+            .map-placeholder::before {
+                font-size: 52px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>宴请场所：巴比澜美食厅(Babilan南湖店)</h1>
+    </div>
+
+    <div class="address-card">
+        <div class="address-label">📍 详细地址</div>
+        <div class="address-text">新疆维吾尔自治区乌鲁木齐市水磨沟区六道湾街道南湖东路长青128号摩界12-1号</div>
+    </div>
+
+    <div class="map-container">
+        <div id="mapArea" class="map-placeholder">
+            <p>地图加载中...</p>
+        </div>
+    </div>
+
+    <button class="nav-btn" id="navBtn">
+        <span>🚀</span>
+        <span>导航至宴请地点</span>
+    </button>
+
+    <script>
+        const destination = '新疆维吾尔自治区乌鲁木齐市水磨沟区六道湾街道南湖东路长青128号摩界12-1号';
+        const shopName = '巴比澜美食厅(Babilan南湖店)';
+        const encodedDest = encodeURIComponent(destination);
+        const encodedShop = encodeURIComponent(shopName);
+        const lat = '43.8256';
+        const lng = '87.6177';
+
+        function loadMap() {
+            const mapArea = document.getElementById('mapArea');
+            
+            const iframe = document.createElement('iframe');
+            iframe.className = 'map-frame';
+            iframe.src = `https://restapi.amap.com/v3/staticmap?location=${lng},${lat}&zoom=15&size=750*380&markers=large,0xFF6B6B,A:${lng},${lat}&key=1d21c992a7f684a7b2c7e9d2c5f0a8b9`;
+            iframe.loading = 'lazy';
+            iframe.referrerPolicy = 'no-referrer';
+            
+            const backupSrc = `https://api.map.baidu.com/staticimage/v2?ak=E4805d16520de693a3fe707cdc962045&center=${lng},${lat}&width=750&height=380&zoom=15&markers=${lng},${lat}`;
+            
+            let loaded = false;
+            
+            iframe.onload = function() {
+                loaded = true;
+                mapArea.style.animation = 'none';
+                mapArea.innerHTML = '';
+                mapArea.appendChild(iframe);
+                
+                setTimeout(() => {
+                    const frame = document.createElement('iframe');
+                    frame.className = 'map-frame';
+                    frame.src = `https://www.amap.com/place?query=${encodedShop}&geoobj=${lng},${lat}`;
+                    frame.style.display = 'none';
+                    
+                    frame.onload = function() {
+                        if (mapArea.contains(iframe)) {
+                            mapArea.innerHTML = '';
+                            frame.style.display = 'block';
+                            mapArea.appendChild(frame);
+                        }
+                    };
+                    
+                    frame.onerror = function() {
+                        console.log('Interactive map failed, using static map');
+                    };
+                    
+                    document.body.appendChild(frame);
+                }, 500);
+            };
+            
+            iframe.onerror = function() {
+                if (!loaded) {
+                    const backup = document.createElement('iframe');
+                    backup.className = 'map-frame';
+                    backup.src = backupSrc;
+                    
+                    backup.onload = function() {
+                        mapArea.innerHTML = '';
+                        mapArea.appendChild(backup);
+                    };
+                    
+                    backup.onerror = function() {
+                        const mapLink = document.createElement('div');
+                        mapLink.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);';
+                        mapLink.innerHTML = '<span style="font-size:48px;">📍</span><p style="margin-top:12px;color:#64748b;font-size:14px;">点击查看地图</p>';
+                        mapLink.onclick = function() {
+                            window.open(`https://uri.amap.com/marker?position=${lng},${lat}&name=${encodedShop}`, '_blank');
+                        };
+                        mapArea.innerHTML = '';
+                        mapArea.appendChild(mapLink);
+                    };
+                    
+                    mapArea.appendChild(backup);
+                }
+            };
+            
+            mapArea.appendChild(iframe);
+        }
+
+        function isWeChat() {
+            return /MicroMessenger/i.test(navigator.userAgent);
+        }
+
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        function openLocationPicker() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        startNavigation(position.coords.latitude, position.coords.longitude);
+                    },
+                    function(error) {
+                        console.log('Location error:', error);
+                        startNavigation(null, null);
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            } else {
+                startNavigation(null, null);
+            }
+        }
+
+        function startNavigation(fromLat, fromLng) {
+            const isInWeChat = isWeChat();
+            const isPhone = isMobile();
+            
+            if (isInWeChat) {
+                const qqMapUrl = `https://apis.map.qq.com/uri/v1/marker?marker=coord:${lat},${lng};title:${encodedShop};addr:${encodedDest}&referer=myapp`;
+                window.location.href = qqMapUrl;
+                return;
+            }
+            
+            if (isPhone) {
+                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                
+                if (isIOS) {
+                    const schemes = [
+                        `iosamap://path?sourceApplication=宴会导航&dlat=${lat}&dlon=${lng}&dname=${encodedShop}&dev=0&t=0`,
+                        `baidumap://map/direction?destination=latlng:${lat},${lng}|name:${encodedShop}&coord_type=gcj02&mode=driving&src=webapp`,
+                        `qqmap://map/routeplan?type=drive&from=我的位置&to=${encodedShop}&tocoord=${lat},${lng}&policy=1`
+                    ];
+                    
+                    let index = 0;
+                    function tryNext() {
+                        if (index < schemes.length) {
+                            window.location.href = schemes[index];
+                            index++;
+                            setTimeout(tryNext, 800);
+                        } else {
+                            window.location.href = `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d&t=m`;
+                        }
+                    }
+                    tryNext();
+                } else if (isAndroid) {
+                    const schemes = [
+                        `androidamap://route?sourceApplication=宴会导航&dlat=${lat}&dlon=${lng}&dname=${encodedShop}&dev=0&t=0`,
+                        `baidumap://map/direction?destination=latlng:${lat},${lng}|name:${encodedShop}&coord_type=gcj02&mode=driving&src=webapp`,
+                        `qqmap://map/routeplan?type=drive&from=我的位置&to=${encodedShop}&tocoord=${lat},${lng}&policy=1`
+                    ];
+                    
+                    let index = 0;
+                    function tryNext() {
+                        if (index < schemes.length) {
+                            window.location.href = schemes[index];
+                            index++;
+                            setTimeout(tryNext, 800);
+                        } else {
+                            window.location.href = `https://uri.amap.com/navigation?to=${lng},${lat},${encodedShop}&mode=car&policy=1&src=mypage&coordinate=gaode&callnative=0`;
+                        }
+                    }
+                    tryNext();
+                }
+            } else {
+                window.open(`https://www.amap.com/place?query=${encodedShop}&geoobj=${lng},${lat}`, '_blank');
+            }
+        }
+
+        document.getElementById('navBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+            
+            openLocationPicker();
+        });
+
+        setTimeout(loadMap, 100);
+    </script>
+</body>
+</html>

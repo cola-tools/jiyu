@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+     <link rel="shortcut icon" href="../assets/vico/main.ico" type="image/x-icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测速工具 - Toolala</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a6bff;
+            --secondary-color: #6c5ce7;
+            --text-color: #333;
+            --light-text: #f8f9fa;
+            --bg-color: #f5f7ff;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        #particles-js {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--light-text);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(5px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="url"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 5px 15px rgba(74, 107, 255, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 107, 255, 0.4);
+        }
+
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .result {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 8px;
+            background-color: rgba(74, 107, 255, 0.1);
+            text-align: center;
+            display: none;
+        }
+
+        .result h3 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .speed-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 1rem 0;
+        }
+
+        .status {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+        }
+
+        .status.error {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--light-text);
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .speed-value {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .card {
+                padding: 1.2rem;
+            }
+
+            input[type="url"], button {
+                padding: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    
+    <div class="container">
+        <header>
+            <h1>网站测速工具</h1>
+            <p class="subtitle">实时检测网站响应速度，优化您的网站性能</p>
+        </header>
+        
+        <div class="card">
+            <form id="speedTestForm">
+                <div class="form-group">
+                    <label for="url">请输入要测试的网站URL</label>
+                    <input type="url" id="url" name="url" placeholder="https://www.example.com" required>
+                </div>
+                
+                <button type="submit" id="testBtn">开始测速</button>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>正在测试中，请稍候...</p>
+                </div>
+                
+                <div class="result" id="result">
+                    <h3>测试结果</h3>
+                    <div class="speed-value" id="speedValue">--</div>
+                    <p>网站的响应时间为</p>
+                    <div class="status" id="status"></div>
+                </div>
+            </form>
+        </div>
+        
+        <footer>
+            <p>© 2025 网站测速工具 | Toolala工具站</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // 初始化粒子效果
+        document.addEventListener('DOMContentLoaded', function() {
+            particlesJS('particles-js', {
+                "particles": {
+                    "number": {
+                        "value": 80,
+                        "density": {
+                            "enable": true,
+                            "value_area": 800
+                        }
+                    },
+                    "color": {
+                        "value": "#ffffff"
+                    },
+                    "shape": {
+                        "type": "circle",
+                        "stroke": {
+                            "width": 0,
+                            "color": "#000000"
+                        },
+                        "polygon": {
+                            "nb_sides": 5
+                        }
+                    },
+                    "opacity": {
+                        "value": 0.5,
+                        "random": false,
+                        "anim": {
+                            "enable": false,
+                            "speed": 1,
+                            "opacity_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "size": {
+                        "value": 3,
+                        "random": true,
+                        "anim": {
+                            "enable": false,
+                            "speed": 40,
+                            "size_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "line_linked": {
+                        "enable": true,
+                        "distance": 150,
+                        "color": "#ffffff",
+                        "opacity": 0.4,
+                        "width": 1
+                    },
+                    "move": {
+                        "enable": true,
+                        "speed": 2,
+                        "direction": "none",
+                        "random": false,
+                        "straight": false,
+                        "out_mode": "out",
+                        "bounce": false,
+                        "attract": {
+                            "enable": false,
+                            "rotateX": 600,
+                            "rotateY": 1200
+                        }
+                    }
+                },
+                "interactivity": {
+                    "detect_on": "canvas",
+                    "events": {
+                        "onhover": {
+                            "enable": true,
+                            "mode": "grab"
+                        },
+                        "onclick": {
+                            "enable": true,
+                            "mode": "push"
+                        },
+                        "resize": true
+                    },
+                    "modes": {
+                        "grab": {
+                            "distance": 140,
+                            "line_linked": {
+                                "opacity": 1
+                            }
+                        },
+                        "bubble": {
+                            "distance": 400,
+                            "size": 40,
+                            "duration": 2,
+                            "opacity": 8,
+                            "speed": 3
+                        },
+                        "repulse": {
+                            "distance": 200,
+                            "duration": 0.4
+                        },
+                        "push": {
+                            "particles_nb": 4
+                        },
+                        "remove": {
+                            "particles_nb": 2
+                        }
+                    }
+                },
+                "retina_detect": true
+            });
+        });
+
+        // 处理表单提交
+        document.getElementById('speedTestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const urlInput = document.getElementById('url').value.trim();
+            const testBtn = document.getElementById('testBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const speedValue = document.getElementById('speedValue');
+            const status = document.getElementById('status');
+            
+            // 验证URL格式
+            if (!isValidUrl(urlInput)) {
+                status.className = 'status error';
+                status.textContent = '请输入有效的URL，例如: https://www.example.com';
+                result.style.display = 'block';
+                return;
+            }
+            
+            // 显示加载状态
+            testBtn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            // 调用API
+            const apiUrl = `https://v2.xxapi.cn/api/speed?url=${encodeURIComponent(urlInput)}`;
+            
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应不正常');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.code === 200) {
+                        const speed = data.data.replace('ms', '');
+                        speedValue.textContent = data.data;
+                        status.className = 'status success';
+                        status.textContent = '测速成功！';
+                        
+                        // 根据速度显示不同颜色
+                        const speedNum = parseInt(speed);
+                        if (speedNum < 300) {
+                            speedValue.style.color = '#2ecc71'; // 绿色 - 优秀
+                        } else if (speedNum < 800) {
+                            speedValue.style.color = '#f39c12'; // 橙色 - 良好
+                        } else {
+                            speedValue.style.color = '#e74c3c'; // 红色 - 需要优化
+                        }
+                    } else {
+                        throw new Error(data.msg || '测速失败');
+                    }
+                })
+                .catch(error => {
+                    speedValue.textContent = '--';
+                    status.className = 'status error';
+                    status.textContent = error.message || '测速过程中发生错误';
+                })
+                .finally(() => {
+                    loading.style.display = 'none';
+                    result.style.display = 'block';
+                    testBtn.disabled = false;
+                });
+        });
+        
+        // URL验证函数
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+    </script>
+</body>
+</html>

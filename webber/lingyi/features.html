@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目特色 - 轻量化独居老人大数据监护助手</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/features.css">
+    <link rel="icon" type="image/x-icon" href="ass/vico/lg.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* 新增的快速链接样式 */
+        .quick-nav {
+            background-color: #f8f9fa;
+            padding: 15px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .quick-nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .quick-nav-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .quick-nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .quick-nav-link {
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        
+        .quick-nav-link:hover {
+            color: #007bff;
+        }
+        
+        .quick-nav-link.active {
+            color: #007bff;
+            font-weight: 500;
+        }
+        
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .quick-nav-links {
+                gap: 15px;
+            }
+            
+            .quick-nav-link {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" target="_blank" class="logo">
+                <i class="fas fa-feather-pointed"></i>
+                <span data-translate="home">凌翼</span>
+            </a>
+            
+            <ul class="nav-menu">
+                <li><a href="index.html" target="_blank" class="nav-link">首页</a></li>
+                <li><a href="features.html" target="_blank" class="nav-link active">项目特色</a></li>
+                <li><a href="team.html" target="_blank" class="nav-link">团队成员</a></li>
+                <li><a href="about.html" target="_blank" class="nav-link">关于我们</a></li>
+            </ul>
+            
+            <div class="control-buttons">
+                <button class="theme-toggle">
+                    <i class="fas fa-sun sun"></i>
+                    <i class="fas fa-moon moon"></i>
+                </button>
+            </div>
+            
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- 移动端菜单 -->
+        <div class="mobile-menu">
+            <ul class="nav-menu">
+                <li><a href="index.html" target="_blank" class="nav-link">首页</a></li>
+                <li><a href="features.html" target="_blank" class="nav-link active">项目特色</a></li>
+                <li><a href="team.html" target="_blank" class="nav-link">团队成员</a></li>
+                <li><a href="about.html" target="_blank" class="nav-link">关于我们</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="main-content">
+        <!-- 页面标题区域 -->
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title" data-translate="features">项目特色</h1>
+                <p class="page-subtitle">
+                    创新的技术特色与核心优势，为独居老人提供全方位的智能监护
+                </p>
+            </div>
+        </section>
+
+        <!-- 特色功能展示区域 -->
+        <section class="features-showcase">
+            <div class="container">
+                <div class="features-grid">
+                    <!-- 特色功能1 -->
+                    <div class="feature-item" data-feature="monitoring">
+                        <div class="feature-icon">
+                            <i class="fas fa-video"></i>
+                            <div class="icon-glow"></div>
+                        </div>
+                        <h3 data-translate="feature1">智能监测</h3>
+                        <p>基于AI算法的实时行为监测，智能识别老人日常活动状态</p>
+                    </div>
+                    
+                    <!-- 特色功能2 -->
+                    <div class="feature-item" data-feature="analysis">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-bar"></i>
+                            <div class="icon-glow"></div>
+                        </div>
+                        <h3 data-translate="feature2">数据分析</h3>
+                        <p>大数据深度分析，提供个性化健康指导和建议</p>
+                    </div>
+                    
+                    <!-- 特色功能3 -->
+                    <div class="feature-item" data-feature="alert">
+                        <div class="feature-icon">
+                            <i class="fas fa-bell"></i>
+                            <div class="icon-glow"></div>
+                        </div>
+                        <h3 data-translate="feature3">预警系统</h3>
+                        <p>多级预警机制，紧急情况自动通知家属和医疗机构</p>
+                    </div>
+                    
+                </div>
+            </div>
+        </section>
+
+        <!-- 技术优势区域 -->
+        <section class="tech-advantages">
+            <div class="container">
+                <div class="section-header">
+                    <h2>技术优势</h2>
+                    <p>领先的技术架构与创新的解决方案</p>
+                </div>
+                
+                <div class="advantages-grid">
+                    <div class="advantage-card">
+                        <div class="advantage-number">01</div>
+                        <h4>人工智能算法</h4>
+                        <p>基于深度学习的智能行为识别算法</p>
+                        <ul class="advantage-list">
+                            <li>行为模式识别</li>
+                            <li>异常检测预警</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="advantage-card">
+                        <div class="advantage-number">02</div>
+                        <h4>大数据平台</h4>
+                        <p>分布式大数据处理架构，海量数据实时分析</p>
+                        <ul class="advantage-list">
+                            <li>实时数据流处理</li>
+                            <li>智能数据挖掘</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="advantage-card">
+                        <div class="advantage-number">03</div>
+                        <h4>云计算架构</h4>
+                        <p>弹性云原生架构，确保系统高可用性</p>
+                        <ul class="advantage-list">
+                            <li>微服务架构</li>
+                            <li>容器化部署</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="advantage-card">
+                        <div class="advantage-number">04</div>
+                        <h4>物联网技术</h4>
+                        <p>多传感器数据采集，构建智能监护网络</p>
+                        <ul class="advantage-list">
+                            <li>智能传感器</li>
+                            <li>边缘计算</li>
+                            <li>无线通信</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 应用场景区域 -->
+        <section class="application-scenarios">
+            <div class="container">
+                <div class="section-header">
+                    <h2>应用场景</h2>
+                    <p>广泛适用于各种独居老人监护场景</p>
+                </div>
+                
+                <div class="scenarios-tabs">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" data-tab="home">家庭监护</button>
+                    <!--   <button class="tab-btn" data-tab="community">社区服务</button>   --> 
+                    <!--    <button class="tab-btn" data-tab="hospital">医疗机构</button>   -->
+                    <!--   <button class="tab-btn" data-tab="government">政府监管</button>  --> 
+                    </div>
+                    
+                    <div class="tab-content">
+
+
+                        <div class="tab-pane active" id="home">
+                            <div class="scenario-content">
+                                <div class="scenario-image">
+                                    <i class="fas fa-home"></i>
+                                </div>
+                                <div class="scenario-text">
+                                    <h3>家庭智能监护解决方案</h3>
+                                    <p>为独居老人家庭提供全方位的智能监护服务，包括日常活动监测、健康数据跟踪、紧急情况预警等功能。</p>
+                                    <ul>
+                                        <li>24小时不间断监测</li>
+                                        <li>智能行为分析</li>
+                                        <li>紧急呼叫系统</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    <!--    <div class="tab-pane" id="community">
+                            <div class="scenario-content">
+                                <div class="scenario-image">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="scenario-text">
+                                    <h3>社区养老服务支持</h3>
+                                    <p>为社区养老服务中心提供智能化管理平台，实现老人信息的集中管理和服务资源的优化配置。</p>
+                                    <ul>
+                                        <li>老人信息管理</li>
+                                        <li>服务需求分析</li>
+                                        <li>资源调度优化</li>
+                                        <li>服务质量监控</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>   -->
+                        
+                <!--        <div class="tab-pane" id="hospital">
+                            <div class="scenario-content">
+                                <div class="scenario-image">
+                                    <i class="fas fa-hospital"></i>
+                                </div>
+                                <div class="scenario-text">
+                                    <h3>医疗机构远程监护</h3>
+                                    <p>为医疗机构提供远程监护平台，实现老人健康状况的远程监测和医疗服务的及时介入。</p>
+                                    <ul>
+                                        <li>远程健康监测</li>
+                                        <li>医疗数据共享</li>
+                                        <li>紧急医疗响应</li>
+                                        <li>康复进度跟踪</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>   -->
+                        
+                    <!--    <div class="tab-pane" id="government">
+                            <div class="scenario-content">
+                                <div class="scenario-image">
+                                    <i class="fas fa-landmark"></i>
+                                </div>
+                                <div class="scenario-text">
+                                    <h3>政府监管服务平台</h3>
+                                    <p>为政府监管部门提供大数据分析平台，支持养老政策的制定和养老服务质量的监管。</p>
+                                    <ul>
+                                        <li>养老服务监管</li>
+                                        <li>政策效果评估</li>
+                                        <li>资源分配优化</li>
+                                        <li>服务质量评估</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>   -->
+
+
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+   <!-- 页脚 -->
+    <footer class="footer">
+
+        <div class="quick-nav">
+            <div class="quick-nav-container">
+                <div class="quick-nav-links">
+                    <a href="index.html" target="_blank" class="quick-nav-link">首页</a>
+                    <a href="features.html" target="_blank" class="quick-nav-link active">项目特色</a>
+                    <a href="team.html" target="_blank" class="quick-nav-link">团队成员</a>
+                    <a href="about.html" target="_blank" class="quick-nav-link">关于我们</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-content">
+            <div class="copyright">
+                2026©️ 轻量化独居老人大数据监护助手项目 版权归 <a href="https://colatools.cn/" target="_blank">tools world</a> 所有
+            </div>
+            
+            <div class="friend-links">
+                <div class="friend-links-dropdown">
+                    <button class="friend-links-toggle" id="friendLinksToggle">
+                        <span>友情链接</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="friend-links-menu" id="friendLinksMenu">
+                        <a href="../R.kya/index.html" target="_blank" class="friend-link">Riya摄影馆</a>
+                        <a href="../tools/index.html" target="_blank" class="friend-link">tools world</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script src="js/features.js"></script>
+
+     <script>
+        // 快速链接的交互效果
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取所有快速链接
+            const quickLinks = document.querySelectorAll('.quick-nav-link');
+            
+            // 为每个链接添加点击事件
+            quickLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    // 移除所有链接的active类
+                    quickLinks.forEach(l => l.classList.remove('active'));
+                    // 为当前点击的链接添加active类
+                    this.classList.add('active');
+                });
+            });
+            
+            // 保持与页面当前状态的同步
+            const currentPage = window.location.pathname.split('/').pop();
+            if (currentPage === 'features.html' || currentPage === '') {
+                document.querySelector('.quick-nav-link[href="features.html"]').classList.add('active');
+            }
+        });
+    </script>
+
+</body>
+</html>

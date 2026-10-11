@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于我们 - Toolala工具站</title>
+    <link rel="shortcut icon" href="assets/vico/main.ico" type="image/x-icon">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/animations.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- 在 head 标签内，紧接在现有样式之后添加 -->
+<style>
+    /* 聊天机器人样式 */
+    .chat-bot-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 350px;
+        max-height: 500px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        z-index: 1000;
+        overflow: hidden;
+        transform: translateY(100%);
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .chat-bot-container.active {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    
+    .chat-bot-header {
+        background: #6c5ce7;
+        color: white;
+        padding: 12px 15px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+    }
+    
+    .chat-bot-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .chat-bot-toggle {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+    
+    .chat-bot-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 400px;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+    
+    .message {
+        max-width: 80%;
+        padding: 0.6rem 1rem;
+        border-radius: 12px;
+        position: relative;
+        animation: fadeIn 0.3s ease;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .bot-message {
+        align-self: flex-start;
+        background-color: rgba(108, 92, 231, 0.1);
+        border-bottom-left-radius: 4px;
+        color: #2d3436;
+    }
+    
+    .user-message {
+        align-self: flex-end;
+        background-color: #00b894;
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .message-time {
+        font-size: 0.7rem;
+        opacity: 0.7;
+        margin-top: 0.3rem;
+        text-align: right;
+    }
+    
+    .chat-input-area {
+        padding: 0.8rem;
+        border-top: 1px solid #dfe6e9;
+        display: flex;
+        gap: 0.5rem;
+        background: white;
+    }
+    
+    .chat-input-area input {
+        flex: 1;
+        padding: 0.6rem 0.8rem;
+        border: 1px solid #dfe6e9;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    
+    .chat-input-area input:focus {
+        border-color: #6c5ce7;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+    }
+    
+    .chat-send-btn {
+        background-color: #6c5ce7;
+        color: white;
+        border: none;
+        width: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .chat-send-btn:hover {
+        background-color: #5649c0;
+    }
+    
+    .chat-send-btn:disabled {
+        background-color: #b2bec3;
+        cursor: not-allowed;
+    }
+    
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.6rem 1rem;
+        background-color: rgba(108, 92, 231, 0.1);
+        border-radius: 12px;
+        align-self: flex-start;
+        margin-bottom: 0.5rem;
+    }
+    
+    .typing-dot {
+        width: 6px;
+        height: 6px;
+        background-color: #6c5ce7;
+        border-radius: 50%;
+        animation: typingAnimation 1.4s infinite ease-in-out;
+    }
+    
+    .typing-dot:nth-child(1) {
+        animation-delay: 0s;
+    }
+    
+    .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    @keyframes typingAnimation {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-3px); }
+    }
+    
+    .quick-questions {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.5rem;
+        padding: 0.8rem;
+        background: white;
+        scrollbar-width: none;
+    }
+    
+    .quick-questions::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .quick-question {
+        background-color: rgba(108, 92, 231, 0.1);
+        color: #6c5ce7;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    
+    .quick-question:hover {
+        background-color: rgba(108, 92, 231, 0.2);
+    }
+    
+    .chat-bot-launcher {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        background-color: #6c5ce7;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        z-index: 999;
+        transition: all 0.3s ease;
+    }
+    
+    .chat-bot-launcher:hover {
+        background-color: #5649c0;
+        transform: scale(1.1);
+    }
+    
+    .chat-bot-launcher i {
+        font-size: 1.5rem;
+    }
+    
+    @media (max-width: 600px) {
+        .chat-bot-container {
+            width: calc(100% - 40px);
+            max-height: 70vh;
+            bottom: 10px;
+            right: 10px;
+        }
+        
+        .chat-bot-launcher {
+            width: 50px;
+            height: 50px;
+            bottom: 10px;
+            right: 10px;
+        }
+    }
+</style>
+
+    
+</head>
+<body>
+    <!-- 3D背景粒子效果 -->
+    <div id="particles-js"></div>
+    
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <img src="assets/vico/main.ico" alt="小可乐工具箱" class="logo">
+                <span class="brand-name">Toolala工具站</span>
+                <span class="tagline">工具 · 效率 · 开源</span>
+            </div>
+            <div class="navbar-menu">
+                <ul class="nav-links">
+                    <li class="nav-item"><a href="index.html"><i class="fas fa-home"></i> 首页</a></li>
+                    <li class="nav-item"><a href="tools.html"><i class="fas fa-tools"></i> 工具</a></li>
+                    <li class="nav-item"><a href="ZX-tools.html"><i class="fas fa-laptop-code"></i> 在线工具</a></li>
+                    <li class="nav-item"><a href="BK.html"><i class="fas fa-file-arrow-down"></i>站点下载</a></li>
+                    <li class="nav-item active"><a href="about.html"><i class="fas fa-info-circle"></i> 关于我们</a></li>
+                </ul>
+            </div>
+            <div class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="main-content">
+        <!-- 网站介绍 -->
+        <section class="about-section">
+            <div class="container">
+                <div class="about-header">
+                        <i class="fas fa-info-circle"></i>
+                        <h2>关于Toolala工具站</h2>
+                </div>
+                <div class="about-card">
+                    <div class="about-body">
+                        <p>Toolala工具站由小可乐（cola）旗下发布的web网站，是一个开源免费的实用软件，工具集合网站，致力于为广大用户提供便捷高效的在线工具服务。</br>
+                        我们的使命是让技术变得更简单、更易用，无论您是普通用户还是专业开发者，都能在这里找到适合您的工具。</p>
+                        <div class="about-features">
+                            <div class="feature-item">
+                                <i class="fas fa-lock-open"></i>
+                                <h3>完全免费</h3>
+                                <p>所有工具永久免费，无任何隐藏收费</p>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-code"></i>
+                                <h3>开源透明</h3>
+                                <p>代码完全开源，接受社区监督</p>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-heart"></i>
+                                <h3>用心维护</h3>
+                                <p>定期更新，持续优化用户体验</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 作者介绍 -->
+        <section class="author-section">
+            <div class="container">
+                <h2 class="section-title"><i class="fas fa-user-tie"></i> 作者介绍</h2>
+                <div class="author-card">
+                    <div class="author-avatar">
+                        <img src="assets/vico/main.ico" alt="Ran">
+                        <div class="author-badge">创始人</div>
+                    </div>
+                    <div class="author-info">
+                        <h3>小冉</h3>
+                        <p class="author-title">自由开发者 & 开源爱好者</p>
+                        <p class="author-desc">我是小冉，一名热爱编程的自由开发者。创建这个工具站的初衷是希望将平时开发中积累和日常生活中用到的的实用工具分享给大家，让更多人能享受到技术带来的便利。</p>
+                        <p class="author-desc">我相信开源的力量，这个项目的所有代码都可以在GitHub上找到，欢迎大家一起参与改进！</p>
+                        <div class="author-social">
+                            <a target="_blank" href="https://github.com" class="social-link"><i class="fab fa-github"></i></a>
+                            <a target="_blank" href="LXFS.html" class="social-link"><i class="fab fa-weixin"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+      <!-- 赞赏支持 -->
+<section class="donate-section">
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-hand-holding-heart"></i> 赞赏支持</h2>
+        <div class="donate-content">
+            <p class="donate-description">Toolala工具站是完全免费的开源项目，如果您觉得这些工具对您有帮助，欢迎通过以下方式支持我们继续开发和维护：</p>
+            <div class="donate-methods">
+                <div class="donate-method">
+                    <h3><i class="fab fa-weixin"></i> 微信赞赏</h3>
+                    <div class="qrcode-container">
+                        <img src="assets/vico/ZSM.ICO" alt="微信赞赏码" class="qrcode-img">
+                        <p class="qrcode-text">微信扫码赞赏</p>
+                    </div>
+                </div>
+            </div>
+            <p class="donate-note">您的支持将帮助我们持续改进和添加更多实用工具！所有资金将用于服务器费用，域名续费以及开发维护！</p>
+        </div>
+    </div>
+</section>
+
+
+
+<!-- 赞赏统计表 -->
+<section class="donation-stats">
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-heart"></i> 赞助统计</h2>
+        <div class="stats-table-container">
+            <div class="scrollable-table-wrapper">
+                <table class="donation-table">
+                    <thead>
+                        <tr>
+                            <th>赞助方式</th>
+                            <th>赞助账号</th>
+                            <th>赞助者</th>
+                            <th>金额</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td data-tooltip="暂无信息">暂无信息</td>
+                            <td data-tooltip="暂无信息">暂无信息</td>
+                            <td data-tooltip="暂无信息">暂无信息</td>
+                            <td data-tooltip="暂无信息">暂无信息</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3">总计</td>
+                            <td>---</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <p class="stats-note"><span style="color:red">*</span> 以上为全部赞助者信息，感谢所有支持我们的朋友！</br><span style="color:red">注</span>：所有赞助者信息都设置为部分数据可见，有效保护赞助者隐私！</p>
+        </div>
+    </div>
+</section>
+
+        <!-- 联系我们 -->
+        <section class="contact-section">
+            <div class="container">
+                <h2 class="section-title"><i class="fas fa-envelope"></i> 联系我们</h2>
+                <div class="contact-card">
+                    <form id="contact-form" class="contact-form">
+                    </form>
+                    
+                    <div class="contact-info">
+                        <h3>其他联系方式</h3>
+                        <div class="info-item">
+                            <i class="fas fa-envelope"></i>
+                            <span>2171156701@qq.com</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fab fa-weixin"></i>
+                            <span>微信公众号: Toolala小助手</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>中国 · 新疆</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-lock lock-icon"></i>
+                            <span>关注微信公众号，获取访问码以及文件解压密码</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a target="_blank" href="about.html" class="footer-link">关于我们</a>
+                    <a target="_blank" href="license.html" class="footer-link">开源协议</a>
+                    <a target="_blank" href="contribute.html" class="footer-link">贡献指南</a>
+                    <a target="_blank" href="cla.html" class="footer-link">贡献者协议</a>
+                </div>
+                <div class="footer-social">
+                    <a href="https://github.com/" class="social-icon"><i class="fab fa-github"></i></a>
+                    <a href="LXFS.html" class="social-icon"><i class="fab fa-weixin"></i></a>
+                    <a href="https://qm.qq.com/q/2n0NE6YY1O" class="social-icon"><i class="fab fa-qq"></i></a>
+                </div>
+            </div>
+            <div class="footer-copyright">
+                <p>© 2026 Toolala工具站 - 开源免费工具集合 | 由可乐科技提供支持</p>
+                <div class="friend-links-container">
+        <button class="friend-links-btn">友情链接 ▼</button>
+        <div class="friend-links-dropdown" id="friendLinksDropdown">
+                <a href="../R.kya/index.html" target="_blank" class="friend-link">Riya摄影馆</a>
+                <a href="../tools/index.html" target="_blank" class="friend-link">tools world</a>
+        </div>
+    </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 聊天机器人启动按钮 -->
+<div class="chat-bot-launcher" id="chatBotLauncher">
+    <i class="fas fa-robot"></i>
+</div>
+
+<!-- 聊天机器人容器 -->
+<div class="chat-bot-container" id="chatBotContainer">
+    <div class="chat-bot-header" id="chatBotHeader">
+        <h3><i class="fas fa-robot"></i> Toolala智能助手</h3>
+        <button class="chat-bot-toggle" id="chatBotToggle">
+            <i class="fas fa-minus"></i>
+        </button>
+    </div>
+    <div class="chat-bot-body">
+        <div class="chat-messages" id="chat-messages">
+            <div class="welcome-message"></div>
+        </div>
+        <div class="quick-questions" id="quick-questions">
+            <!-- 快捷问题按钮将通过JavaScript动态生成 -->
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="user-input" placeholder="输入消息..." autocomplete="off">
+            <button class="chat-send-btn" id="send-btn" disabled>
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+
+    <script src="assets/js/particles.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script>
+        // 联系我们表单提交
+        document.getElementById('contact-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 这里应该是AJAX请求发送表单数据
+            console.log('发送联系表单:', {
+                name: document.getElementById('contact-name').value,
+                email: document.getElementById('contact-email').value,
+                message: document.getElementById('contact-message').value
+            });
+            
+            // 显示成功弹窗
+            document.getElementById('contact-modal').style.display = 'flex';
+            
+            // 重置表单
+            this.reset();
+        });
+        
+        // 关闭弹窗
+        document.getElementById('close-modal').addEventListener('click', function() {
+            document.getElementById('contact-modal').style.display = 'none';
+        });
+    </script>
+
+    <script>
+    // 快捷问题列表
+    const quickQuestions = [
+        "最近为什么一直没更新？",
+        "Toolala工具站是做什么的？",
+        "有什么功能？",
+        "怎么联系客服？",
+        "网站地址是什么？",
+        "如何使用工具站？",
+        "常见问题解答",
+    ];
+    
+    // 答案映射
+    const answerMap = {
+        "最近为什么一直没更新？": "最近因为技术部门较忙原因，无法能够正常更新页面工具和其他内容，我们计划在7月份开始正常更新，请大家耐心等待！",
+        "Toolala工具站是做什么的？": "Toolala工具站是一个开源免费的实用工具导航系统，同时也有很多程序/软件包含在网站中，您可以按照自己的需求进行获取。",
+        "有什么功能？": "可以导航到在线工具网站、可以下载各种手机/电脑实用工具、可以使用在线工具等等",
+        "怎么联系客服？": "您可以通过邮件3430667576@qq.com或2171156701@qq.com联系我们。",
+        "网站地址是什么？": "我们的网站地址是https://colatools.cn。",
+        "如何使用工具站？": "只需访问网站，选择您需要的工具，跳转或下载使用即可；在站点“工具”导航栏最下方有工具具体使用/下载步骤可以参考！",
+        "常见问题解答": "1.Toolala工具站收费吗？2.Toolala工具站会一直线上运营吗？3.Toolala工具站贡献者协议4.Toolala工具站贡献指南5.Toolala工具站技术支持。在消息框输入对应问题的数字，你就能精确地找到相关问题的答案。",
+        "你是谁": "我是Toolala工具站智能机器人，很高兴为您服务。有任何问题可以先和我沟通，若得不到你想要的答案，那就联系技术吧！",
+        "1": "Toolala工具站因近期运营，对广大用户免费使用，而且功能都很基础，所以对用户全面开源免费使用。",
+        "2": "Toolala工具站对此只能说“不晓得”,因为后期在线运营还是主要看用户支持和精神以及其他方面的支持，如果后期访问数，点击量变低，域名续费和站点服务器运维资金不足等的情况下，小可乐工具站会被迫停止在线运营；所以希望广大用户持续支持我们，让我们将网站持续运营下去，谢谢您们！",
+        "3": "您可以在站点页面下滑，找到页脚信息中的“贡献者协议”，点击访问即可查看详细贡献协议。",
+        "4": "您可以在站点页面下滑，找到页脚信息中的“贡献指南”，点击访问即可查看详细贡献指南，帮你快速了解如何贡献代码。",
+        "5": "Toolala工具站由多个站点共同支持；例如“DeepSeek”、“xxAPI”等，其他技术支持暂未了解到站点信息，如有看到您的产品，请联系站长！"
+    };
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const quickQuestionsContainer = document.getElementById('quick-questions');
+        const chatBotLauncher = document.getElementById('chatBotLauncher');
+        const chatBotContainer = document.getElementById('chatBotContainer');
+        const chatBotHeader = document.getElementById('chatBotHeader');
+        const chatBotToggle = document.getElementById('chatBotToggle');
+        
+        // 初始化聊天机器人状态
+        let chatBotOpen = false;
+        
+        // 添加快捷问题按钮
+        quickQuestions.forEach(question => {
+            const btn = document.createElement('button');
+            btn.className = 'quick-question';
+            btn.textContent = question;
+            btn.addEventListener('click', () => {
+                userInput.value = question;
+                sendMessage();
+            });
+            quickQuestionsContainer.appendChild(btn);
+        });
+        
+        // 启用/禁用发送按钮
+        userInput.addEventListener('input', function() {
+            sendBtn.disabled = this.value.trim() === '';
+        });
+        
+        // 聊天机器人启动按钮点击事件
+        chatBotLauncher.addEventListener('click', function() {
+            chatBotOpen = !chatBotOpen;
+            if (chatBotOpen) {
+                chatBotContainer.classList.add('active');
+                chatBotLauncher.style.opacity = '0';
+                setTimeout(() => {
+                    chatBotLauncher.style.display = 'none';
+                }, 300);
+            } else {
+                chatBotContainer.classList.remove('active');
+                chatBotLauncher.style.display = 'flex';
+                setTimeout(() => {
+                    chatBotLauncher.style.opacity = '1';
+                }, 10);
+            }
+        });
+        
+        // 聊天机器人头部点击事件
+        chatBotHeader.addEventListener('click', function() {
+            chatBotOpen = false;
+            chatBotContainer.classList.remove('active');
+            chatBotLauncher.style.display = 'flex';
+            setTimeout(() => {
+                chatBotLauncher.style.opacity = '1';
+            }, 10);
+        });
+        
+        // 点击发送按钮
+        sendBtn.addEventListener('click', sendMessage);
+        
+        // 按回车键发送
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+            
+            // 添加用户消息到聊天界面
+            addMessage(message, 'user');
+            userInput.value = '';
+            sendBtn.disabled = true;
+            
+            // 显示机器人正在输入
+            showTypingIndicator();
+            
+            try {
+                // 这里可以替换为实际的模型调用
+                // 现在使用简单的答案映射
+                let botResponse = answerMap[message] || "我还在学习中，暂时无法回答这个问题。您可以尝试其他问题。";
+                
+                // 模拟网络延迟
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                removeTypingIndicator();
+                typewriterEffect(botResponse, 'bot');
+            } catch (error) {
+                console.error('Error:', error);
+                removeTypingIndicator();
+                typewriterEffect("抱歉，我暂时无法处理您的请求。", 'bot');
+            }
+        }
+        
+        // 逐字打印效果
+        function typewriterEffect(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const messageText = document.createElement('div');
+            messageDiv.appendChild(messageText);
+            
+            const timeSpan = document.createElement('div');
+            timeSpan.className = 'message-time';
+            timeSpan.textContent = getCurrentTime();
+            messageDiv.appendChild(timeSpan);
+            
+            chatMessages.appendChild(messageDiv);
+            
+            let i = 0;
+            const speed = 50; // 打字速度(毫秒)
+            
+            function typeWriter() {
+                if (i < text.length) {
+                    messageText.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, speed);
+                    scrollToBottom();
+                }
+            }
+            
+            typeWriter();
+        }
+        
+        // 添加普通消息到聊天界面
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const messageText = document.createElement('div');
+            messageText.textContent = text;
+            messageDiv.appendChild(messageText);
+            
+            const timeSpan = document.createElement('div');
+            timeSpan.className = 'message-time';
+            timeSpan.textContent = getCurrentTime();
+            messageDiv.appendChild(timeSpan);
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        // 显示机器人正在输入
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.id = 'typing-indicator';
+            
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'typing-dot';
+                typingDiv.appendChild(dot);
+            }
+            
+            chatMessages.appendChild(typingDiv);
+            scrollToBottom();
+        }
+        
+        // 移除输入指示器
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        // 获取当前时间
+        function getCurrentTime() {
+            const now = new Date();
+            return `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+        }
+        
+        // 滚动到底部
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // 初始欢迎消息(使用打字机效果)
+        setTimeout(() => {
+            const welcomeText = "您好！我是Toolala工具站的智能助手，可以回答关于工具站的各种问题。有什么我可以帮助您的吗？（因自定义后台知识库，只支持对应问题的搜索，不支持个性聊天；可以点击下方“常见问题解决”快捷按钮，找到问题源和解决方法）";
+            typewriterEffect(welcomeText, 'bot');
+        }, 1000);
+    });
+</script>
+
+    
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3><i class="fas fa-info-circle"></i> 使用前必读</h3>
+        </div>
+        <div class="modal-body">
+            <div class="notice-section">
+                <h4><i class="fas fa-exclamation-triangle"></i> 注意事项</h4>
+                <ul class="notice-list">
+                    <li><i class="fas fa-check-circle"></i> 本站所有工具免费提供，请勿相信任何付费信息</li>
+                    <li><i class="fas fa-check-circle"></i> 下载资源前请先查毒，确保安全后再使用</li>
+                    <li><i class="fas fa-check-circle"></i> 所有资源需要提取码和解压密码，请通过公众号获取</li>
+                    <li><i class="fas fa-check-circle"></i> 如遇链接失效，请联系站长更新</li>
+                    <li><i class="fas fa-check-circle"></i> 使用工具时请遵守相关法律法规</li>
+                    <li><i class="fas fa-check-circle"></i> 本站不对工具使用造成的任何后果负责</li>
+                </ul>
+            </div>
+            
+            <div class="extraction-code-section">
+                <h4><i class="fas fa-hdd" title="网盘"></i> 常用网盘</h4>
+                <div class="code-grid">
+                    <div class="code-item">
+                        <div class="code-label">小飞机网盘：</div>
+                        <div class="code-value">通过暗号获取提取码</div>
+                    </div>
+                    <div class="code-item">
+                        <div class="code-label">蓝奏云网盘：</div>
+                        <div class="code-value">通过暗号获取提取码</div>
+                    </div>
+                </div>
+                <p class="code-tip">注：工具对应暗号在每一个工具卡片内容中详细说明</p>
+            </div>
+            
+            <div class="qrcode-section">
+                <h4><i class="fas fa-question-circle" title="获取帮助"></i> 获取帮助</h4>
+                <div class="qrcode-container">
+                    <img src="assets/images/gzh.jpg" alt="Toolala公众号二维码" class="qrcode-img">
+                    <div class="qrcode-desc">
+                        <p><i class="fas fa-search" style="color: #6c5ce7; font-size: 1.2em;" title="搜索"></i> 微信搜索：<strong>Toolala小助手</strong></p>
+                        <p><i class="fas fa-comment"></i> 回复每一工具对应的暗号，即可获取最新提取码</p>
+                        <p><i class="fas fa-unlock"></i> 依次点击 网站服务➔解压密码 即可获取文件解压密码</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-options">
+                <label class="dont-show-again">
+                    <input type="checkbox" id="dontShowAgain"> 不再提醒（仅本次浏览有效）
+                </label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-confirm-btn" id="modalConfirmBtn">我已了解</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 弹窗样式 - 使用网站原有属性 */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .modal-container {
+        background-color: #fff;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+    }
+    
+    .modal-overlay.active .modal-container {
+        transform: translateY(0);
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+        background-color: #6c5ce7;
+        color: white;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .modal-header i {
+        font-size: 1.2rem;
+    }
+    
+    .modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+    
+    .notice-section, .extraction-code-section, .qrcode-section {
+        margin-bottom: 20px;
+    }
+    
+    .notice-section h4, .extraction-code-section h4, .qrcode-section h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #6c5ce7;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .notice-list {
+        padding-left: 5px;
+        margin: 0;
+        list-style: none;
+    }
+    
+    .notice-list li {
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+        color: #555;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        line-height: 1.5;
+    }
+    
+    .notice-list i {
+        color: #00b894;
+        font-size: 0.9rem;
+        margin-top: 2px;
+    }
+    
+    .extraction-code-section {
+        padding: 15px;
+        background-color: rgba(108, 92, 231, 0.1);
+        border-radius: 8px;
+    }
+    
+    .code-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .code-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .code-label {
+        font-weight: bold;
+        color: #333;
+        font-size: 0.9rem;
+    }
+    
+    .code-value {
+        background-color: #fff;
+        padding: 5px 12px;
+        border-radius: 4px;
+        font-family: monospace;
+        color: #e74c3c;
+        font-weight: bold;
+        font-size: 0.95rem;
+        border: 1px dashed #6c5ce7;
+        min-width: 80px;
+        text-align: center;
+    }
+    
+    .code-tip {
+        margin-top: 10px;
+        font-size: 0.8rem;
+        color: #777;
+        text-align: center;
+    }
+    
+    .qrcode-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .qrcode-img {
+        width: 120px;
+        height: 120px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+    }
+    
+    .qrcode-desc {
+        flex: 1;
+        font-size: 0.9rem;
+        color: #555;
+    }
+    
+    .qrcode-desc p {
+        margin: 0 0 10px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .qrcode-desc i {
+        color: #6c5ce7;
+        font-size: 0.9rem;
+        width: 16px;
+        text-align: center;
+    }
+    
+    .qrcode-desc strong {
+        color: #6c5ce7;
+    }
+    
+    .modal-options {
+        margin: 20px 0;
+        text-align: center;
+    }
+    
+    .dont-show-again {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: #555;
+        cursor: pointer;
+    }
+    
+    .dont-show-again input {
+        cursor: pointer;
+    }
+    
+    .modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .modal-confirm-btn {
+        background-color: #6c5ce7;
+        color: white;
+        border: none;
+        padding: 10px 30px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .modal-confirm-btn:hover {
+        background-color: #5649c0;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-confirm-btn:active {
+        transform: translateY(1px);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    
+    @media (max-width: 480px) {
+        .modal-container {
+            width: 95%;
+            max-height: 85vh;
+        }
+        
+        .qrcode-container {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .qrcode-desc p {
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    // 弹窗控制逻辑
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const dontShowAgainCheckbox = document.getElementById('dontShowAgain');
+        
+        // 检查sessionStorage中是否设置了不再显示
+        const dontShowModal = sessionStorage.getItem('dontShowToolalaModal');
+        
+        // 如果没有设置不再显示，则显示弹窗
+        if (dontShowModal !== 'true') {
+            setTimeout(() => {
+                modalOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }, 1500); // 页面加载1.5秒后显示
+        }
+        
+        // 确认按钮点击事件
+        modalConfirmBtn.addEventListener('click', function() {
+            // 检查是否勾选"不再提醒"
+            if (dontShowAgainCheckbox.checked) {
+                // 使用sessionStorage存储，只在当前会话有效
+                sessionStorage.setItem('dontShowToolalaModal', 'true');
+            }
+            
+            modalOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+            
+            // 添加点击效果
+            this.classList.add('clicked');
+            setTimeout(() => {
+                this.classList.remove('clicked');
+            }, 300);
+        });
+        
+        // 禁用滚动条
+        modalOverlay.addEventListener('wheel', function(e) {
+            if (!e.target.closest('.modal-body')) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
+</body>
+</html>
+
+

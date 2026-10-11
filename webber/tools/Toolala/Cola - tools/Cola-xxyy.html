@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="想让孩子主动学英语，就用它吧，例句，近义词等都有，而且还能提供单词读音，让孩子更好地学习英语发音！">
+    <meta name="keywords" content="想要有趣而又好玩的工具，就来Toolala">
+     <link rel="shortcut icon" href="../assets/vico/main.ico" type="image/x-icon"> 
+    <title>英语单词详解查询 - Toolala</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4895ef;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #4cc9f0;
+            --warning-color: #f72585;
+            --border-radius: 8px;
+            --box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--dark-color);
+            color: var(--light-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            animation: fadeIn 1s ease;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, var(--accent-color), var(--success-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 1.5rem;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+            animation: slideUp 0.8s ease;
+        }
+
+        .search-box {
+            display: flex;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius) 0 0 var(--border-radius);
+            font-size: 1.1rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            background-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px var(--accent-color);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-btn {
+            padding: 0 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: var(--transition);
+        }
+
+        .search-btn:hover {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            transform: translateY(-2px);
+        }
+
+        .result-container {
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--box-shadow);
+            animation: fadeIn 0.8s ease;
+            display: none;
+        }
+
+        .word-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .word-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .phonetics {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .phonetic {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .phonetic-icon {
+            color: var(--accent-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .phonetic-icon:hover {
+            color: var(--success-color);
+            transform: scale(1.1);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            margin: 1.5rem 0 1rem;
+            color: var(--accent-color);
+            border-bottom: 2px solid rgba(72, 149, 239, 0.3);
+            padding-bottom: 0.5rem;
+        }
+
+        .translations {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .translation {
+            background-color: rgba(72, 149, 239, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(72, 149, 239, 0.3);
+        }
+
+        .translation .pos {
+            font-weight: 500;
+            color: var(--accent-color);
+            margin-right: 0.5rem;
+        }
+
+        .word-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .word-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .word-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border-color: rgba(72, 149, 239, 0.5);
+        }
+
+        .word-card .pos {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .word-item {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .word-item .word {
+            font-weight: 500;
+            margin-right: 0.5rem;
+        }
+
+        .word-item .tran {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .sentence {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .sentence-content {
+            font-style: italic;
+            margin-bottom: 0.5rem;
+        }
+
+        .sentence-cn {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        .phrase-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .phrase-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            transition: var(--transition);
+        }
+
+        .phrase-item:hover {
+            background-color: rgba(72, 149, 239, 0.1);
+        }
+
+        .phrase-content {
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+        }
+
+        .phrase-cn {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .error-message {
+            color: var(--warning-color);
+            text-align: center;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .word-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .phonetics {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .word-list, .phrase-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .search-input {
+                padding: 0.8rem 1rem;
+                font-size: 1rem;
+            }
+
+            .search-btn {
+                padding: 0 1rem;
+            }
+
+            .word-title {
+                font-size: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    
+    <div class="container">
+        <header>
+            <h1>英语单词详解查询</h1>
+            <p class="subtitle">查询单词的详细解释、短语、例句、同根词和发音</p>
+        </header>
+        
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="输入要查询的英语单词..." id="wordInput">
+                <button class="search-btn" id="searchBtn">
+                    <i class="fas fa-search"></i> 查询
+                </button>
+            </div>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在查询中...</p>
+        </div>
+        
+        <div class="result-container" id="resultContainer">
+            <div class="word-header">
+                <h2 class="word-title" id="wordTitle"></h2>
+                <div class="phonetics">
+                    <div class="phonetic">
+                        <span id="ukPhonetic"></span>
+                        <i class="fas fa-volume-up phonetic-icon" id="ukSpeech"></i>
+                    </div>
+                    <div class="phonetic">
+                        <span id="usPhonetic"></span>
+                        <i class="fas fa-volume-up phonetic-icon" id="usSpeech"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="translationsSection">
+                <h3 class="section-title">翻译</h3>
+                <div class="translations" id="translations"></div>
+            </div>
+            
+            <div id="phrasesSection">
+                <h3 class="section-title">短语</h3>
+                <div class="phrase-list" id="phrases"></div>
+            </div>
+            
+            <div id="relWordsSection">
+                <h3 class="section-title">同根词</h3>
+                <div class="word-list" id="relWords"></div>
+            </div>
+            
+            <div id="synonymsSection">
+                <h3 class="section-title">近义词</h3>
+                <div class="word-list" id="synonyms"></div>
+            </div>
+            
+            <div id="sentencesSection">
+                <h3 class="section-title">例句</h3>
+                <div id="sentences"></div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2025 英语单词查询工具 | Toolala工具站</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        // 初始化粒子效果
+        document.addEventListener('DOMContentLoaded', function() {
+            particlesJS('particles-js', {
+                "particles": {
+                    "number": {
+                        "value": 80,
+                        "density": {
+                            "enable": true,
+                            "value_area": 800
+                        }
+                    },
+                    "color": {
+                        "value": "#ffffff"
+                    },
+                    "shape": {
+                        "type": "circle",
+                        "stroke": {
+                            "width": 0,
+                            "color": "#000000"
+                        },
+                        "polygon": {
+                            "nb_sides": 5
+                        }
+                    },
+                    "opacity": {
+                        "value": 0.3,
+                        "random": false,
+                        "anim": {
+                            "enable": false,
+                            "speed": 1,
+                            "opacity_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "size": {
+                        "value": 3,
+                        "random": true,
+                        "anim": {
+                            "enable": false,
+                            "speed": 40,
+                            "size_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "line_linked": {
+                        "enable": true,
+                        "distance": 150,
+                        "color": "#ffffff",
+                        "opacity": 0.2,
+                        "width": 1
+                    },
+                    "move": {
+                        "enable": true,
+                        "speed": 2,
+                        "direction": "none",
+                        "random": false,
+                        "straight": false,
+                        "out_mode": "out",
+                        "bounce": false,
+                        "attract": {
+                            "enable": false,
+                            "rotateX": 600,
+                            "rotateY": 1200
+                        }
+                    }
+                },
+                "interactivity": {
+                    "detect_on": "canvas",
+                    "events": {
+                        "onhover": {
+                            "enable": true,
+                        "mode": "grab"
+                        },
+                        "onclick": {
+                            "enable": true,
+                            "mode": "push"
+                        },
+                        "resize": true
+                    },
+                    "modes": {
+                        "grab": {
+                            "distance": 140,
+                            "line_linked": {
+                                "opacity": 1
+                            }
+                        },
+                        "bubble": {
+                            "distance": 400,
+                            "size": 40,
+                            "duration": 2,
+                            "opacity": 8,
+                            "speed": 3
+                        },
+                        "repulse": {
+                            "distance": 200,
+                            "duration": 0.4
+                        },
+                        "push": {
+                            "particles_nb": 4
+                        },
+                        "remove": {
+                            "particles_nb": 2
+                        }
+                    }
+                },
+                "retina_detect": true
+            });
+            
+            // 搜索功能
+            const searchBtn = document.getElementById('searchBtn');
+            const wordInput = document.getElementById('wordInput');
+            const resultContainer = document.getElementById('resultContainer');
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            searchBtn.addEventListener('click', searchWord);
+            wordInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchWord();
+                }
+            });
+            
+            function searchWord() {
+                const word = wordInput.value.trim();
+                if (!word) {
+                    showError('请输入要查询的单词');
+                    return;
+                }
+                
+                // 显示加载中，隐藏结果和错误
+                loading.style.display = 'block';
+                resultContainer.style.display = 'none';
+                errorMessage.style.display = 'none';
+                
+                // 调用API
+                axios.get(`https://v2.xxapi.cn/api/englishwords?word=${encodeURIComponent(word)}`)
+                    .then(response => {
+                        if (response.data.code === 200) {
+                            displayWordData(response.data.data);
+                        } else {
+                            showError(response.data.msg || '查询失败，请重试');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching word data:', error);
+                        showError('查询失败，请检查单词拼写或稍后重试');
+                    })
+                    .finally(() => {
+                        loading.style.display = 'none';
+                    });
+            }
+            
+            function displayWordData(data) {
+                // 设置单词标题
+                document.getElementById('wordTitle').textContent = data.word;
+                
+                // 设置音标和发音
+                document.getElementById('ukPhonetic').textContent = `英: /${data.ukphone}/`;
+                document.getElementById('usPhonetic').textContent = `美: /${data.usphone}/`;
+                
+                // 设置发音按钮
+                document.getElementById('ukSpeech').onclick = () => playAudio(data.ukspeech);
+                document.getElementById('usSpeech').onclick = () => playAudio(data.usspeech);
+                
+                // 设置翻译
+                const translationsContainer = document.getElementById('translations');
+                translationsContainer.innerHTML = '';
+                if (data.translations && data.translations.length > 0) {
+                    data.translations.forEach(trans => {
+                        const div = document.createElement('div');
+                        div.className = 'translation';
+                        div.innerHTML = `<span class="pos">${trans.pos}</span>${trans.tran_cn}`;
+                        translationsContainer.appendChild(div);
+                    });
+                    document.getElementById('translationsSection').style.display = 'block';
+                } else {
+                    document.getElementById('translationsSection').style.display = 'none';
+                }
+                
+                // 设置短语
+                const phrasesContainer = document.getElementById('phrases');
+                phrasesContainer.innerHTML = '';
+                if (data.phrases && data.phrases.length > 0) {
+                    data.phrases.forEach(phrase => {
+                        const div = document.createElement('div');
+                        div.className = 'phrase-item';
+                        div.innerHTML = `
+                            <div class="phrase-content">${phrase.p_content}</div>
+                            <div class="phrase-cn">${phrase.p_cn}</div>
+                        `;
+                        phrasesContainer.appendChild(div);
+                    });
+                    document.getElementById('phrasesSection').style.display = 'block';
+                } else {
+                    document.getElementById('phrasesSection').style.display = 'none';
+                }
+                
+                // 设置同根词
+                const relWordsContainer = document.getElementById('relWords');
+                relWordsContainer.innerHTML = '';
+                if (data.relWords && data.relWords.length > 0) {
+                    data.relWords.forEach(group => {
+                        const div = document.createElement('div');
+                        div.className = 'word-card';
+                        let content = `<div class="pos">${group.Pos}</div>`;
+                        
+                        group.Hwds.forEach(word => {
+                            content += `
+                                <div class="word-item">
+                                    <span class="word">${word.hwd}</span>
+                                    <span class="tran">${word.tran}</span>
+                                </div>
+                            `;
+                        });
+                        
+                        div.innerHTML = content;
+                        relWordsContainer.appendChild(div);
+                    });
+                    document.getElementById('relWordsSection').style.display = 'block';
+                } else {
+                    document.getElementById('relWordsSection').style.display = 'none';
+                }
+                
+                // 设置近义词
+                const synonymsContainer = document.getElementById('synonyms');
+                synonymsContainer.innerHTML = '';
+                if (data.synonyms && data.synonyms.length > 0) {
+                    data.synonyms.forEach(group => {
+                        const div = document.createElement('div');
+                        div.className = 'word-card';
+                        let content = `<div class="pos">${group.pos}</div>`;
+                        content += `<div class="tran">${group.tran}</div>`;
+                        
+                        group.Hwds.forEach(word => {
+                            content += `
+                                <div class="word-item">
+                                    <span class="word">${word.word}</span>
+                                </div>
+                            `;
+                        });
+                        
+                        div.innerHTML = content;
+                        synonymsContainer.appendChild(div);
+                    });
+                    document.getElementById('synonymsSection').style.display = 'block';
+                } else {
+                    document.getElementById('synonymsSection').style.display = 'none';
+                }
+                
+                // 设置例句
+                const sentencesContainer = document.getElementById('sentences');
+                sentencesContainer.innerHTML = '';
+                if (data.sentences && data.sentences.length > 0) {
+                    data.sentences.forEach(sentence => {
+                        const div = document.createElement('div');
+                        div.className = 'sentence';
+                        div.innerHTML = `
+                            <div class="sentence-content">${sentence.s_content}</div>
+                            <div class="sentence-cn">${sentence.s_cn}</div>
+                        `;
+                        sentencesContainer.appendChild(div);
+                    });
+                    document.getElementById('sentencesSection').style.display = 'block';
+                } else {
+                    document.getElementById('sentencesSection').style.display = 'none';
+                }
+                
+                // 显示结果容器
+                resultContainer.style.display = 'block';
+            }
+            
+            function playAudio(audioUrl) {
+                if (audioUrl) {
+                    const audio = new Audio(audioUrl);
+                    audio.play().catch(e => console.error('播放音频失败:', e));
+                }
+            }
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                resultContainer.style.display = 'none';
+            }
+            
+            // 初始加载一个示例单词
+            wordInput.value = 'tool';
+            searchWord();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="输入QQ号，自动获取QQ头像，并生成吃掉头像的GIF动画，可下载！">
+    <meta name="keywords" content="想要有趣而又好玩的工具，就来Toolala">
+     <link rel="shortcut icon" href="../assets/vico/main.ico" type="image/x-icon">
+    <title>吃掉头像 - Toolala工具站</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #FF6B6B;
+            --secondary-color: #4ECDC4;
+            --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            --gradient-secondary: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+            --text-color: #333;
+            --light-text: #f8f8f8;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            color: var(--text-color);
+            line-height: 1.6;
+            background: #f5f5f5;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 4px;
+            background: var(--gradient-primary);
+            margin: 15px auto;
+            border-radius: 2px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--light-text);
+            opacity: 0.8;
+        }
+
+        .converter-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 107, 107, 0.2);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        .converter-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .input-field {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+        }
+
+        .btn {
+            background: var(--gradient-primary);
+            color: #1a1a1a;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn i {
+            margin-right: 8px;
+        }
+
+        .preview-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .image-preview {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            position: relative;
+            background: #f0f0f0;
+            max-width: 300px;
+            margin: 0 auto;
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .image-placeholder {
+            text-align: center;
+            color: #888;
+            padding: 20px;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-card.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .result-title i {
+            margin-right: 10px;
+        }
+
+        .download-btn {
+            background: var(--gradient-secondary);
+            color: #1a1a1a;
+        }
+
+        .result-url {
+            word-break: break-all;
+            background: #f5f5f5;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .copy-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: 10px;
+            transition: var(--transition);
+        }
+
+        .copy-btn:hover {
+            background: #e05555;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 107, 107, 0.2);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--light-text);
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .converter-card {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+            
+            .input-field {
+                flex-direction: column;
+            }
+            
+            .result-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient-primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    
+    <div class="container">
+        <header>
+            <h1>吃掉头像GIF生成器</h1>
+            <p class="subtitle">输入QQ号，生成有趣的"吃掉"头像GIF</p>
+        </header>
+        
+        <div class="converter-card">
+            <div class="input-group">
+                <label for="qqNumber">输入QQ号：</label>
+                <div class="input-field">
+                    <input type="text" id="qqNumber" placeholder="例如：2595557847" required>
+                    <button id="generateBtn" class="btn">
+                        <i>🍴</i> 吃掉它
+                    </button>
+                </div>
+            </div>
+            
+            <div class="preview-container">
+                <div class="image-preview">
+                    <div class="image-placeholder" id="resultPlaceholder">
+                        <p>生成的GIF将显示在这里</p>
+                    </div>
+                    <img id="resultGif" style="display: none;">
+                </div>
+            </div>
+            
+            <div id="resultCard" class="result-card">
+                <div class="result-header">
+                    <h3 class="result-title"><i>🎉</i> 生成成功！</h3>
+                    <button id="downloadBtn" class="btn download-btn">
+                        <i>⬇️</i> 下载GIF
+                    </button>
+                </div>
+                <p>已成功生成"吃掉"头像GIF，点击上方按钮下载或复制下方链接：</p>
+                <div class="result-url">
+                    <span id="resultUrl"></span>
+                    <button id="copyBtn" class="copy-btn">复制</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>正在生成GIF，请稍候...</p>
+        </div>
+        
+        <footer>
+            <p>© 2025 吃掉头像GIF生成器 | Toolala工具站</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化粒子效果
+        document.addEventListener('DOMContentLoaded', function() {
+            particlesJS('particles-js', {
+                "particles": {
+                    "number": {
+                        "value": 80,
+                        "density": {
+                            "enable": true,
+                            "value_area": 800
+                        }
+                    },
+                    "color": {
+                        "value": ["#FF6B6B", "#4ECDC4"]
+                    },
+                    "shape": {
+                        "type": "circle",
+                        "stroke": {
+                            "width": 0,
+                            "color": "#000000"
+                        },
+                        "polygon": {
+                            "nb_sides": 5
+                        }
+                    },
+                    "opacity": {
+                        "value": 0.5,
+                        "random": true,
+                        "anim": {
+                            "enable": true,
+                            "speed": 1,
+                            "opacity_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "size": {
+                        "value": 3,
+                        "random": true,
+                        "anim": {
+                            "enable": true,
+                            "speed": 2,
+                            "size_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "line_linked": {
+                        "enable": true,
+                        "distance": 150,
+                        "color": "#FF6B6B",
+                        "opacity": 0.4,
+                        "width": 1
+                    },
+                    "move": {
+                        "enable": true,
+                        "speed": 1,
+                        "direction": "none",
+                        "random": true,
+                        "straight": false,
+                        "out_mode": "out",
+                        "bounce": false,
+                        "attract": {
+                            "enable": true,
+                            "rotateX": 600,
+                            "rotateY": 1200
+                        }
+                    }
+                },
+                "interactivity": {
+                    "detect_on": "canvas",
+                    "events": {
+                        "onhover": {
+                            "enable": true,
+                            "mode": "grab"
+                        },
+                        "onclick": {
+                            "enable": true,
+                            "mode": "push"
+                        },
+                        "resize": true
+                    },
+                    "modes": {
+                        "grab": {
+                            "distance": 140,
+                            "line_linked": {
+                                "opacity": 1
+                            }
+                        },
+                        "bubble": {
+                            "distance": 400,
+                            "size": 40,
+                            "duration": 2,
+                            "opacity": 8,
+                            "speed": 3
+                        },
+                        "repulse": {
+                            "distance": 200,
+                            "duration": 0.4
+                        },
+                        "push": {
+                            "particles_nb": 4
+                        },
+                        "remove": {
+                            "particles_nb": 2
+                        }
+                    }
+                },
+                "retina_detect": true
+            });
+            
+            // 获取DOM元素
+            const qqNumber = document.getElementById('qqNumber');
+            const generateBtn = document.getElementById('generateBtn');
+            const resultGif = document.getElementById('resultGif');
+            const resultPlaceholder = document.getElementById('resultPlaceholder');
+            const loadingElement = document.getElementById('loading');
+            const resultCard = document.getElementById('resultCard');
+            const resultUrl = document.getElementById('resultUrl');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            
+            let currentGifUrl = '';
+            
+            // 生成GIF按钮点击事件
+            generateBtn.addEventListener('click', function() {
+                const qq = qqNumber.value.trim();
+                if (!qq) {
+                    alert('请输入QQ号');
+                    return;
+                }
+                
+                // 验证QQ号格式
+                if (!/^[1-9][0-9]{4,11}$/.test(qq)) {
+                    alert('请输入有效的QQ号');
+                    return;
+                }
+                
+                // 生成GIF
+                generateBiteGif(qq);
+            });
+            
+            // 生成GIF函数
+            function generateBiteGif(qq) {
+                // 显示加载状态
+                loadingElement.style.display = 'block';
+                resultCard.classList.remove('show');
+                
+                // 隐藏结果GIF
+                resultGif.style.display = 'none';
+                resultPlaceholder.style.display = 'block';
+                
+                // 调用API生成GIF
+                fetch(`https://v2.xxapi.cn/api/bite?qq=${qq}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('网络响应不正常');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.code === 200) {
+                            // 显示生成的GIF
+                            resultGif.src = data.data;
+                            resultGif.style.display = 'block';
+                            resultPlaceholder.style.display = 'none';
+                            
+                            // 显示结果卡片
+                            resultUrl.textContent = data.data;
+                            resultCard.classList.add('show');
+                            
+                            // 保存当前GIF URL
+                            currentGifUrl = data.data;
+                            
+                            // 设置下载按钮
+                            downloadBtn.onclick = function() {
+                                const a = document.createElement('a');
+                                a.href = currentGifUrl;
+                                a.download = `bite_${qq}.gif`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                            };
+                        } else {
+                            throw new Error(data.msg || '生成GIF失败');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('生成GIF错误:', error);
+                        alert('生成GIF失败: ' + error.message);
+                    })
+                    .finally(() => {
+                        loadingElement.style.display = 'none';
+                    });
+            }
+            
+            // 复制链接功能
+            copyBtn.addEventListener('click', function() {
+                if (currentGifUrl) {
+                    navigator.clipboard.writeText(currentGifUrl).then(() => {
+                        copyBtn.textContent = '已复制!';
+                        setTimeout(() => {
+                            copyBtn.textContent = '复制';
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('复制失败:', err);
+                        alert('复制失败，请手动复制链接');
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

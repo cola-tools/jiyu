@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="收藏馆为最初创建的图片馆，收藏了很多图片，与2.0,3.0相比，有一定差距！">
+    <meta name="keywords" content="想要有趣而又好玩的工具，就来Toolala">
+     <link rel="shortcut icon" href="../assets/vico/main.ico" type="image/x-icon">
+    <title>收藏馆 - Toolala工具站</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            color: #fff;
+            background: #f8f3ff;
+        }
+
+        #vanta-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: min(6vw, 2.5rem);
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff9a9e, #fad0c4, #fbc2eb);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-size: 200% auto;
+            animation: gradient 5s linear infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .description {
+            font-size: min(3.5vw, 1.1rem);
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
+            color: #666;
+        }
+
+        .content-box {
+            width: min(90vw, 800px);
+            height: min(70vh, 600px);
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb);
+            color: #333;
+            border: none;
+            padding: 12px 24px;
+            font-size: min(3.5vw, 1rem);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            margin: 10px 0;
+            width: min(80%, 300px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background-size: 200% auto;
+            animation: gradient 5s linear infinite;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .image-container {
+            width: 100%;
+            height: calc(100% - 100px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .image-placeholder {
+            padding: 20px;
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            font-size: min(3.5vw, 1rem);
+        }
+
+        #result-image {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: none;
+            object-fit: contain;
+        }
+
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #666;
+            font-size: min(3.5vw, 1.2rem);
+            text-align: center;
+        }
+
+        .spinner {
+            border: 4px solid rgba(200, 200, 200, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fbc2eb;
+            width: min(10vw, 40px);
+            height: min(10vw, 40px);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        footer {
+            margin-top: 10px;
+            text-align: center;
+            font-size: min(3vw, 0.9rem);
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div id="vanta-bg"></div>
+    
+    <div class="container">
+        <header>
+            <h1>图片收藏馆</h1>
+            <p class="description">点击下方按钮获取随机图片</p>
+        </header>
+        
+        <div class="content-box">
+            <button id="fetch-btn" class="btn">获取图片</button>
+            
+            <div class="image-container">
+                <div class="image-placeholder">等待获取藏品...</div>
+                <img id="result-image" alt="JK图片收藏馆">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    正在查找藏品，请稍等…
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2025 收藏馆 - Toolala工具站</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化3D粒子背景 - 粉色主题
+        const vantaEffect = VANTA.NET({
+            el: "#vanta-bg",
+            color: 0xfbc2eb,
+            backgroundColor: 0xf8f3ff,
+            points: 14,
+            maxDistance: 22,
+            spacing: 16,
+            showDots: false
+        });
+
+        // 动态改变粒子效果 - 粉色渐变
+        let hue = 330;
+        setInterval(() => {
+            hue = (hue + 0.5) % 360;
+            const color = `hsl(${hue}, 80%, 75%)`;
+            vantaEffect.setOptions({
+                color: color
+            });
+        }, 50);
+
+        // API请求功能
+        document.getElementById('fetch-btn').addEventListener('click', function() {
+            const imageContainer = document.querySelector('.image-container');
+            const placeholder = document.querySelector('.image-placeholder');
+            const resultImage = document.getElementById('result-image');
+            const loading = document.querySelector('.loading');
+            
+            // 显示加载状态
+            placeholder.style.display = 'none';
+            resultImage.style.display = 'none';
+            loading.style.display = 'block';
+            
+            // 发起API请求
+            fetch('https://v2.xxapi.cn/api/jk')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络跑丢了，稍后再试');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.code === 200 && data.data) {
+                        // 预加载图片
+                        const img = new Image();
+                        img.onload = function() {
+                            resultImage.src = data.data;
+                            resultImage.style.display = 'block';
+                            loading.style.display = 'none';
+                            
+                            // 图片加载后的小动画
+                            resultImage.style.opacity = '0';
+                            resultImage.style.transform = 'scale(0.9)';
+                            setTimeout(() => {
+                                resultImage.style.transition = 'all 0.5s ease';
+                                resultImage.style.opacity = '1';
+                                resultImage.style.transform = 'scale(1)';
+                            }, 50);
+                        };
+                        img.onerror = function() {
+                            showError('藏品展示失败');
+                        };
+                        img.src = data.data;
+                    } else {
+                        showError('数据异常');
+                    }
+                })
+                .catch(error => {
+                    showError('请求失败: ' + error.message);
+                });
+        });
+
+        function showError(message) {
+            const placeholder = document.querySelector('.image-placeholder');
+            const loading = document.querySelector('.loading');
+            
+            loading.style.display = 'none';
+            placeholder.style.display = 'block';
+            placeholder.textContent = message;
+            placeholder.style.color = '#ff6b6b';
+            
+            // 3秒后恢复默认提示
+            setTimeout(() => {
+                placeholder.style.color = '#888';
+                placeholder.textContent = '等待获取藏品...';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

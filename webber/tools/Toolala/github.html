@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无内容页面 - Toolala工具站</title>
+   <link rel="shortcut icon" href="assets/vico/main.ico" type="image/x-icon">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/themes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 404页面特有样式 */
+        .deployment-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .deployment-icon {
+            font-size: 5rem;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+        }
+        
+        .deployment-title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+        
+        .deployment-message {
+            font-size: 1.2rem;
+            color: var(--light-text);
+            max-width: 600px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        
+        .progress-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 30px auto;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            border-radius: 10px;
+            width: 65%;
+            animation: progressAnimation 3s ease-in-out infinite;
+        }
+        
+        .progress-text {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+        
+        .home-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 500;
+            margin-top: 30px;
+            transition: var(--transition);
+        }
+        
+        .home-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(74, 107, 255, 0.3);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes progressAnimation {
+            0% { width: 65%; }
+            50% { width: 70%; }
+            100% { width: 65%; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D背景粒子效果 -->
+    <div id="particles-js"></div>
+    
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                 <img src="assets/vico/main.ico" alt="Toolala工具站" class="logo">
+                <span class="brand-name">Toolala工具站</span>
+                <span class="tagline">工具 · 效率 · 开源</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 404页面内容 -->
+    <main class="main-content">
+        <div class="deployment-container">
+            <div class="deployment-icon">
+                <i class="fas fa-rocket"></i>
+            </div>
+            <h1 class="deployment-title">404 - 页面未找到</h1>
+            <p class="deployment-message">
+                页面内容跑丢了！
+                
+            </p>
+
+            <a href="index.html" class="home-link">
+                <i class="fas fa-arrow-left"></i> 返回首页
+            </a>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a target="_blank" href="about.html" class="footer-link">关于我们</a>
+                    <a target="_blank" href="license.html" class="footer-link">开源协议</a>
+                    <a target="_blank" href="contribute.html" class="footer-link">贡献指南</a>
+                    <a target="_blank" href="cla.html" class="footer-link">贡献者协议</a>
+                </div>
+                <div class="footer-social">
+                    <a target="_blank" href="LXFS.html" class="social-icon"><i class="fab fa-github"></i></a>
+                    <a target="_blank" href="LXFS.html" class="social-icon"><i class="fab fa-weixin"></i></a>
+                    <a target="_blank" href="LXFS.html" class="social-icon"><i class="fab fa-qq"></i></a>
+                </div>
+            </div>
+            <div class="footer-copyright">
+                <p>© 2026 Toolala工具站 - 开源免费工具集合 | 由可乐科技提供支持</p>
+                <div class="friend-links-container">
+        <button class="friend-links-btn">友情链接 ▼</button>
+        <div class="friend-links-dropdown" id="friendLinksDropdown">
+                <a href="../../R.kya/index.html" target="_blank" class="friend-link">Riya摄影馆</a>
+                <a href="../../tools/index.html" target="_blank" class="friend-link">tools world</a>
+        </div>
+    </div>
+            </div>
+        </div>
+    </footer>
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/particles.js"></script>
+    <script src="assets/js/theme.js"></script>
+    <script>
+        // 禁用所有外部链接
+        document.querySelectorAll('a[href="about.html"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('该功能不可用！');
+            });
+        });
+    </script>
+
+<script>
+    // 禁用所有外部链接
+    document.querySelectorAll('a[href="cla.html"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('该功能不可用！');
+        });
+    });
+</script>
+
+<script>
+    // 禁用所有外部链接
+    document.querySelectorAll('a[href="contribute.html"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('该功能不可用！');
+        });
+    });
+</script>
+
+<script>
+    // 禁用所有外部链接
+    document.querySelectorAll('a[href="license.html"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('该功能不可用！');
+        });
+    });
+</script>
+
+<script>
+    // 禁用所有外部链接
+    document.querySelectorAll('a[href="LXFS.html"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('该功能不可用！');
+        });
+    });
+</script>
+
+<script>
+    // 禁用所有外部链接
+    document.querySelectorAll('a[href="#"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('该功能不可用！');
+        });
+    });
+</script>
+
+<script>
+    // 禁用所有外部链接
+    document.querySelectorAll('a[href="#"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('该功能不可用！');
+        });
+    });
+</script>
+
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3><i class="fas fa-info-circle"></i> 使用前必读</h3>
+        </div>
+        <div class="modal-body">
+            <div class="notice-section">
+                <h4><i class="fas fa-exclamation-triangle"></i> 注意事项</h4>
+                <ul class="notice-list">
+                    <li><i class="fas fa-check-circle"></i> 本站所有工具免费提供，请勿相信任何付费信息</li>
+                    <li><i class="fas fa-check-circle"></i> 下载资源前请先查毒，确保安全后再使用</li>
+                    <li><i class="fas fa-check-circle"></i> 所有资源需要提取码和解压密码，请通过公众号获取</li>
+                    <li><i class="fas fa-check-circle"></i> 如遇链接失效，请联系站长更新</li>
+                    <li><i class="fas fa-check-circle"></i> 使用工具时请遵守相关法律法规</li>
+                    <li><i class="fas fa-check-circle"></i> 本站不对工具使用造成的任何后果负责</li>
+                </ul>
+            </div>
+            
+            <div class="extraction-code-section">
+                <h4><i class="fas fa-hdd" title="网盘"></i> 常用网盘</h4>
+                <div class="code-grid">
+                    <div class="code-item">
+                        <div class="code-label">小飞机网盘：</div>
+                        <div class="code-value">通过暗号获取提取码</div>
+                    </div>
+                    <div class="code-item">
+                        <div class="code-label">蓝奏云网盘：</div>
+                        <div class="code-value">通过暗号获取提取码</div>
+                    </div>
+                </div>
+                <p class="code-tip">注：工具对应暗号在每一个工具卡片内容中详细说明</p>
+            </div>
+            
+            <div class="qrcode-section">
+                <h4><i class="fas fa-question-circle" title="获取帮助"></i> 获取帮助</h4>
+                <div class="qrcode-container">
+                    <img src="assets/images/gzh.jpg" alt="Toolala公众号二维码" class="qrcode-img">
+                    <div class="qrcode-desc">
+                       <p><i class="fas fa-search" style="color: #6c5ce7; font-size: 1.2em;" title="搜索"></i> 微信搜索：<strong>Toolala小助手</strong></p>
+                        <p><i class="fas fa-comment"></i> 回复每一工具对应的暗号，即可获取最新提取码</p>
+                        <p><i class="fas fa-unlock"></i> 依次点击 网站服务➔解压密码 即可获取文件解压密码</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-options">
+                <label class="dont-show-again">
+                    <input type="checkbox" id="dontShowAgain"> 不再提醒（仅本次浏览有效）
+                </label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-confirm-btn" id="modalConfirmBtn">我已了解</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 弹窗样式 - 使用网站原有属性 */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .modal-container {
+        background-color: #fff;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+    }
+    
+    .modal-overlay.active .modal-container {
+        transform: translateY(0);
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+        background-color: #6c5ce7;
+        color: white;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .modal-header i {
+        font-size: 1.2rem;
+    }
+    
+    .modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+    
+    .notice-section, .extraction-code-section, .qrcode-section {
+        margin-bottom: 20px;
+    }
+    
+    .notice-section h4, .extraction-code-section h4, .qrcode-section h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #6c5ce7;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .notice-list {
+        padding-left: 5px;
+        margin: 0;
+        list-style: none;
+    }
+    
+    .notice-list li {
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+        color: #555;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        line-height: 1.5;
+    }
+    
+    .notice-list i {
+        color: #00b894;
+        font-size: 0.9rem;
+        margin-top: 2px;
+    }
+    
+    .extraction-code-section {
+        padding: 15px;
+        background-color: rgba(108, 92, 231, 0.1);
+        border-radius: 8px;
+    }
+    
+    .code-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .code-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .code-label {
+        font-weight: bold;
+        color: #333;
+        font-size: 0.9rem;
+    }
+    
+    .code-value {
+        background-color: #fff;
+        padding: 5px 12px;
+        border-radius: 4px;
+        font-family: monospace;
+        color: #e74c3c;
+        font-weight: bold;
+        font-size: 0.95rem;
+        border: 1px dashed #6c5ce7;
+        min-width: 80px;
+        text-align: center;
+    }
+    
+    .code-tip {
+        margin-top: 10px;
+        font-size: 0.8rem;
+        color: #777;
+        text-align: center;
+    }
+    
+    .qrcode-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .qrcode-img {
+        width: 120px;
+        height: 120px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+    }
+    
+    .qrcode-desc {
+        flex: 1;
+        font-size: 0.9rem;
+        color: #555;
+    }
+    
+    .qrcode-desc p {
+        margin: 0 0 10px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .qrcode-desc i {
+        color: #6c5ce7;
+        font-size: 0.9rem;
+        width: 16px;
+        text-align: center;
+    }
+    
+    .qrcode-desc strong {
+        color: #6c5ce7;
+    }
+    
+    .modal-options {
+        margin: 20px 0;
+        text-align: center;
+    }
+    
+    .dont-show-again {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: #555;
+        cursor: pointer;
+    }
+    
+    .dont-show-again input {
+        cursor: pointer;
+    }
+    
+    .modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .modal-confirm-btn {
+        background-color: #6c5ce7;
+        color: white;
+        border: none;
+        padding: 10px 30px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .modal-confirm-btn:hover {
+        background-color: #5649c0;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-confirm-btn:active {
+        transform: translateY(1px);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    
+    @media (max-width: 480px) {
+        .modal-container {
+            width: 95%;
+            max-height: 85vh;
+        }
+        
+        .qrcode-container {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .qrcode-desc p {
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    // 弹窗控制逻辑
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const dontShowAgainCheckbox = document.getElementById('dontShowAgain');
+        
+        // 检查sessionStorage中是否设置了不再显示
+        const dontShowModal = sessionStorage.getItem('dontShowToolalaModal');
+        
+        // 如果没有设置不再显示，则显示弹窗
+        if (dontShowModal !== 'true') {
+            setTimeout(() => {
+                modalOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }, 1500); // 页面加载1.5秒后显示
+        }
+        
+        // 确认按钮点击事件
+        modalConfirmBtn.addEventListener('click', function() {
+            // 检查是否勾选"不再提醒"
+            if (dontShowAgainCheckbox.checked) {
+                // 使用sessionStorage存储，只在当前会话有效
+                sessionStorage.setItem('dontShowToolalaModal', 'true');
+            }
+            
+            modalOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+            
+            // 添加点击效果
+            this.classList.add('clicked');
+            setTimeout(() => {
+                this.classList.remove('clicked');
+            }, 300);
+        });
+        
+        // 禁用滚动条
+        modalOverlay.addEventListener('wheel', function(e) {
+            if (!e.target.closest('.modal-body')) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
+
+

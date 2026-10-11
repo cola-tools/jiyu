@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toolala工具站 - 开源免费工具集合</title>
+    <meta name="description" content="开源免费的工具集合网站，提供电脑、手机和网页工具，完全免费无会员制">
+    <link rel="stylesheet" href="assets/css/main.css">
+   <link rel="shortcut icon" href="assets/vico/main.ico" type="image/x-icon">
+    <link rel="stylesheet" href="assets/css/animations.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- 聊天机器人样式 -->
+<style>
+    .chat-bot-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 350px;
+        max-height: 500px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        z-index: 1000;
+        overflow: hidden;
+        transform: translateY(100%);
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .chat-bot-container.active {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    
+    .chat-bot-header {
+        background: #6c5ce7;
+        color: white;
+        padding: 12px 15px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+    }
+    
+    .chat-bot-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .chat-bot-toggle {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+    
+    .chat-bot-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 400px;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+    
+    .message {
+        max-width: 80%;
+        padding: 0.6rem 1rem;
+        border-radius: 12px;
+        position: relative;
+        animation: fadeIn 0.3s ease;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .bot-message {
+        align-self: flex-start;
+        background-color: rgba(108, 92, 231, 0.1);
+        border-bottom-left-radius: 4px;
+        color: #2d3436;
+    }
+    
+    .user-message {
+        align-self: flex-end;
+        background-color: #00b894;
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .message-time {
+        font-size: 0.7rem;
+        opacity: 0.7;
+        margin-top: 0.3rem;
+        text-align: right;
+    }
+    
+    .chat-input-area {
+        padding: 0.8rem;
+        border-top: 1px solid #dfe6e9;
+        display: flex;
+        gap: 0.5rem;
+        background: white;
+    }
+    
+    .chat-input-area input {
+        flex: 1;
+        padding: 0.6rem 0.8rem;
+        border: 1px solid #dfe6e9;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    
+    .chat-input-area input:focus {
+        border-color: #6c5ce7;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+    }
+    
+    .chat-send-btn {
+        background-color: #6c5ce7;
+        color: white;
+        border: none;
+        width: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .chat-send-btn:hover {
+        background-color: #5649c0;
+    }
+    
+    .chat-send-btn:disabled {
+        background-color: #b2bec3;
+        cursor: not-allowed;
+    }
+    
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.6rem 1rem;
+        background-color: rgba(108, 92, 231, 0.1);
+        border-radius: 12px;
+        align-self: flex-start;
+        margin-bottom: 0.5rem;
+    }
+    
+    .typing-dot {
+        width: 6px;
+        height: 6px;
+        background-color: #6c5ce7;
+        border-radius: 50%;
+        animation: typingAnimation 1.4s infinite ease-in-out;
+    }
+    
+    .typing-dot:nth-child(1) {
+        animation-delay: 0s;
+    }
+    
+    .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    @keyframes typingAnimation {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-3px); }
+    }
+    
+    .quick-questions {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.5rem;
+        padding: 0.8rem;
+        background: white;
+        scrollbar-width: none;
+    }
+    
+    .quick-questions::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .quick-question {
+        background-color: rgba(108, 92, 231, 0.1);
+        color: #6c5ce7;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    
+    .quick-question:hover {
+        background-color: rgba(108, 92, 231, 0.2);
+    }
+    
+    .chat-bot-launcher {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        background-color: #6c5ce7;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        z-index: 999;
+        transition: all 0.3s ease;
+    }
+    
+    .chat-bot-launcher:hover {
+        background-color: #5649c0;
+        transform: scale(1.1);
+    }
+    
+    .chat-bot-launcher i {
+        font-size: 1.5rem;
+    }
+    
+    @media (max-width: 600px) {
+        .chat-bot-container {
+            width: calc(100% - 40px);
+            max-height: 70vh;
+            bottom: 10px;
+            right: 10px;
+        }
+        
+        .chat-bot-launcher {
+            width: 50px;
+            height: 50px;
+            bottom: 10px;
+            right: 10px;
+        }
+    }
+</style>
+</head>
+<body>
+    <!-- 3D背景粒子效果 -->
+    <div id="particles-js"></div>
+    
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                 <img src="assets/vico/main.ico" alt="小可乐工具箱" class="logo">
+                <span class="brand-name">Toolala工具站</span>
+                <span class="tagline">工具 · 效率 · 开源</span>
+            </div>
+            <div class="navbar-menu">
+                <ul class="nav-links">
+                    <li class="nav-item active"><a href="index.html"><i class="fas fa-home"></i> 首页</a></li>
+                </ul>
+            </div>
+            <div class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="main-content">
+
+        <!-- 视频介绍模块 -->
+<section class="video-section">
+    <div class="container">
+        <div class="video-card">
+            <div class="video-header">
+                <h1> 重要通知：关于站点简介/工具使用视频</h1>
+                <p class="video-subtitle">我们正在为您准备更优质的视频内容</p>
+            </div>
+            <div class="video-features">
+                <div class="feature-item">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h3>临时调整</h3>
+                    <p>站点简介/工具使用视频暂时下架进行升级</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-calendar-check"></i>
+                    <h3>预计时间</h3>
+                    <p>视频内容将在下年重新上线</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-spinner"></i>
+                    <h3>正在努力</h3>
+                    <p>团队正在全力制作更优质内容</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-heart"></i>
+                    <h3>感谢理解</h3>
+                    <p>感谢您对我们的支持与耐心等待</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+  
+ <!-- 公告栏 -->
+        <section class="announcement">
+            <div class="container">
+                <div class="announcement-card">
+                    <div class="announcement-header">
+                        <i class="fas fa-bullhorn"></i>
+                        <h2>致所有Toolala用户的一封信</h2>
+                    </div>
+                    <div class="announcement-body">
+                        <p>亲爱的Toolala用户：</p>
+                        
+                        <p>首先，我们要向您致以最诚挚的歉意。由于视频内容正在进行全面升级优化，我们的站点简介/工具使用视频暂时无法为您提供服务。这绝非我们所愿，我们深知这可能会给您带来不便。</p>
+                        
+                        <p>作为一家致力于提供最佳用户体验的工具站，我们始终将用户需求放在首位。此次视频下架并非草率决定，而是因为我们发现现有视频内容已无法完全展现Toolala工具站的全部价值。我们正在全力以赴，为您制作一段更全面、更专业、更具吸引力的视频。</p>
+                        
+                        <p><span style="font-weight:bold">我们承诺：</span></p>
+                        <ul>
+                            <li>新视频将在下年与广大用户见面</li>
+                            <li>内容将更加丰富详实，全面展示Toolala的各项功能</li>
+                            <li>画质和制作水准将大幅提升</li>
+                            <li>您将获得更好的观看体验</li>
+                        </ul>
+                        
+                        <p>在此期间，您仍然可以正常使用Toolala工具站的所有功能。我们的技术团队也在同步优化其他服务，确保您能获得流畅的使用体验。</p>
+                        
+                        <p>再次感谢您对Toolala工具站的支持与理解。您的每一次点击，都是我们前进的动力；您的每一条建议，都是我们改进的方向。请相信，短暂的等待必将换来更优质的服务。</p>
+                        
+                        <p style="text-align:right;margin-top:20px;">Toolala工具站站长 敬上<br>2025年8月31日</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a target="_blank" href="about.html" class="footer-link">关于我们</a>
+                    <a target="_blank" href="license.html" class="footer-link">开源协议</a>
+                    <a target="_blank" href="contribute.html" class="footer-link">贡献指南</a>
+                    <a target="_blank" href="cla.html" class="footer-link">贡献者协议</a>
+                </div>
+                <div class="footer-social">
+                    <a href="https://github.com/" class="social-icon"><i class="fab fa-github"></i></a>
+                    <a href="LXFS.html" class="social-icon"><i class="fab fa-weixin"></i></a>
+                    <a href="https://qm.qq.com/q/2n0NE6YY1O" class="social-icon"><i class="fab fa-qq"></i></a>
+                </div>
+            </div>
+            <div class="footer-copyright">
+                <p>© 2025 Toolala工具站 - 开源免费工具集合 | 由可乐科技提供支持</p>
+                <div class="friend-links-container">
+        <button class="friend-links-btn">友情链接 ▼</button>
+        <div class="friend-links-dropdown" id="friendLinksDropdown">
+                <a href="../../R.kya/index.html" target="_blank" class="friend-link">Riya摄影馆</a>
+                <a href="../../tools/index.html" target="_blank" class="friend-link">tools world</a>
+        </div>
+    </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="assets/js/particles.js"></script>
+    <script src="assets/js/main.js"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const quickQuestionsContainer = document.getElementById('quick-questions');
+        const chatBotLauncher = document.getElementById('chatBotLauncher');
+        const chatBotContainer = document.getElementById('chatBotContainer');
+        const chatBotHeader = document.getElementById('chatBotHeader');
+        const chatBotToggle = document.getElementById('chatBotToggle');
+        
+        // 初始化聊天机器人状态
+        let chatBotOpen = false;
+        
+        // 添加快捷问题按钮
+        quickQuestions.forEach(question => {
+            const btn = document.createElement('button');
+            btn.className = 'quick-question';
+            btn.textContent = question;
+            btn.addEventListener('click', () => {
+                userInput.value = question;
+                sendMessage();
+            });
+            quickQuestionsContainer.appendChild(btn);
+        });
+        
+        // 启用/禁用发送按钮
+        userInput.addEventListener('input', function() {
+            sendBtn.disabled = this.value.trim() === '';
+        });
+        
+        // 聊天机器人启动按钮点击事件
+        chatBotLauncher.addEventListener('click', function() {
+            chatBotOpen = !chatBotOpen;
+            if (chatBotOpen) {
+                chatBotContainer.classList.add('active');
+                chatBotLauncher.style.opacity = '0';
+                setTimeout(() => {
+                    chatBotLauncher.style.display = 'none';
+                }, 300);
+            } else {
+                chatBotContainer.classList.remove('active');
+                chatBotLauncher.style.display = 'flex';
+                setTimeout(() => {
+                    chatBotLauncher.style.opacity = '1';
+                }, 10);
+            }
+        });
+        
+        // 聊天机器人头部点击事件
+        chatBotHeader.addEventListener('click', function() {
+            chatBotOpen = false;
+            chatBotContainer.classList.remove('active');
+            chatBotLauncher.style.display = 'flex';
+            setTimeout(() => {
+                chatBotLauncher.style.opacity = '1';
+            }, 10);
+        });
+        
+        // 点击发送按钮
+        sendBtn.addEventListener('click', sendMessage);
+        
+        // 按回车键发送
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+            
+            // 添加用户消息到聊天界面
+            addMessage(message, 'user');
+            userInput.value = '';
+            sendBtn.disabled = true;
+            
+            // 显示机器人正在输入
+            showTypingIndicator();
+            
+            try {
+                // 这里可以替换为实际的模型调用
+                // 现在使用简单的答案映射
+                let botResponse = answerMap[message] || "我还在学习中，暂时无法回答这个问题。关于视频暂时不可用的问题，我们正在全力解决，预计10-15天内新视频就能上线。";
+                
+                // 模拟网络延迟
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                removeTypingIndicator();
+                typewriterEffect(botResponse, 'bot');
+            } catch (error) {
+                console.error('Error:', error);
+                removeTypingIndicator();
+                typewriterEffect("抱歉，我暂时无法处理您的请求。关于视频问题，我们团队正在积极解决中，请您耐心等待。", 'bot');
+            }
+        }
+        
+        // 逐字打印效果
+        function typewriterEffect(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const messageText = document.createElement('div');
+            messageDiv.appendChild(messageText);
+            
+            const timeSpan = document.createElement('div');
+            timeSpan.className = 'message-time';
+            timeSpan.textContent = getCurrentTime();
+            messageDiv.appendChild(timeSpan);
+            
+            chatMessages.appendChild(messageDiv);
+            
+            let i = 0;
+            const speed = 60; // 打字速度(毫秒)
+            
+            function typeWriter() {
+                if (i < text.length) {
+                    messageText.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, speed);
+                    scrollToBottom();
+                }
+            }
+            
+            typeWriter();
+        }
+        
+        // 添加普通消息到聊天界面
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const messageText = document.createElement('div');
+            messageText.textContent = text;
+            messageDiv.appendChild(messageText);
+            
+            const timeSpan = document.createElement('div');
+            timeSpan.className = 'message-time';
+            timeSpan.textContent = getCurrentTime();
+            messageDiv.appendChild(timeSpan);
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        // 显示机器人正在输入
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.id = 'typing-indicator';
+            
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'typing-dot';
+                typingDiv.appendChild(dot);
+            }
+            
+            chatMessages.appendChild(typingDiv);
+            scrollToBottom();
+        }
+        
+        // 移除输入指示器
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        // 获取当前时间
+        function getCurrentTime() {
+            const now = new Date();
+            return `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+        }
+        
+        // 滚动到底部
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // 初始欢迎消息(使用打字机效果)
+        setTimeout(() => {
+            const welcomeText = "您好！我是Toolala工具站的智能助手。关于站点简介视频暂时不可用的问题，我很乐意为您解答。我们的团队正在制作更优质的视频内容，预计10-15天内就能重新上线。在此期间，网站所有功能均可正常使用。有什么我可以帮助您的吗？";
+            typewriterEffect(welcomeText, 'bot');
+        }, 1000);
+    });
+</script>
+
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3><i class="fas fa-info-circle"></i> 使用前必读</h3>
+        </div>
+        <div class="modal-body">
+            <div class="notice-section">
+                <h4><i class="fas fa-exclamation-triangle"></i> 注意事项</h4>
+                <ul class="notice-list">
+                    <li><i class="fas fa-check-circle"></i> 本站所有工具免费提供，请勿相信任何付费信息</li>
+                    <li><i class="fas fa-check-circle"></i> 下载资源前请先查毒，确保安全后再使用</li>
+                    <li><i class="fas fa-check-circle"></i> 所有资源需要提取码和解压密码，请通过公众号获取</li>
+                    <li><i class="fas fa-check-circle"></i> 如遇链接失效，请联系站长更新</li>
+                    <li><i class="fas fa-check-circle"></i> 使用工具时请遵守相关法律法规</li>
+                    <li><i class="fas fa-check-circle"></i> 本站不对工具使用造成的任何后果负责</li>
+                </ul>
+            </div>
+            
+            <div class="extraction-code-section">
+                <h4><i class="fas fa-hdd" title="网盘"></i> 常用网盘</h4>
+                <div class="code-grid">
+                    <div class="code-item">
+                        <div class="code-label">小飞机网盘：</div>
+                        <div class="code-value">通过暗号获取提取码</div>
+                    </div>
+                    <div class="code-item">
+                        <div class="code-label">蓝奏云网盘：</div>
+                        <div class="code-value">通过暗号获取提取码</div>
+                    </div>
+                </div>
+                <p class="code-tip">注：工具对应暗号在每一个工具卡片内容中详细说明</p>
+            </div>
+            
+            <div class="qrcode-section">
+                <h4><i class="fas fa-question-circle" title="获取帮助"></i> 获取帮助</h4>
+                <div class="qrcode-container">
+                    <img src="assets/images/gzh.jpg" alt="Toolala公众号二维码" class="qrcode-img">
+                    <div class="qrcode-desc">
+                        <p><i class="fas fa-search" style="color: #6c5ce7; font-size: 1.2em;" title="搜索"></i> 微信搜索：<strong>Toolala小助手</strong></p>
+                        <p><i class="fas fa-comment"></i> 回复每一工具对应的暗号，即可获取最新提取码</p>
+                        <p><i class="fas fa-unlock"></i> 依次点击 网站服务➔解压密码 即可获取文件解压密码</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-options">
+                <label class="dont-show-again">
+                    <input type="checkbox" id="dontShowAgain"> 不再提醒（仅本次浏览有效）
+                </label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-confirm-btn" id="modalConfirmBtn">我已了解</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 弹窗样式 - 使用网站原有属性 */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .modal-container {
+        background-color: #fff;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+    }
+    
+    .modal-overlay.active .modal-container {
+        transform: translateY(0);
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+        background-color: #6c5ce7;
+        color: white;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .modal-header i {
+        font-size: 1.2rem;
+    }
+    
+    .modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+    
+    .notice-section, .extraction-code-section, .qrcode-section {
+        margin-bottom: 20px;
+    }
+    
+    .notice-section h4, .extraction-code-section h4, .qrcode-section h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #6c5ce7;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .notice-list {
+        padding-left: 5px;
+        margin: 0;
+        list-style: none;
+    }
+    
+    .notice-list li {
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+        color: #555;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        line-height: 1.5;
+    }
+    
+    .notice-list i {
+        color: #00b894;
+        font-size: 0.9rem;
+        margin-top: 2px;
+    }
+    
+    .extraction-code-section {
+        padding: 15px;
+        background-color: rgba(108, 92, 231, 0.1);
+        border-radius: 8px;
+    }
+    
+    .code-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .code-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .code-label {
+        font-weight: bold;
+        color: #333;
+        font-size: 0.9rem;
+    }
+    
+    .code-value {
+        background-color: #fff;
+        padding: 5px 12px;
+        border-radius: 4px;
+        font-family: monospace;
+        color: #e74c3c;
+        font-weight: bold;
+        font-size: 0.95rem;
+        border: 1px dashed #6c5ce7;
+        min-width: 80px;
+        text-align: center;
+    }
+    
+    .code-tip {
+        margin-top: 10px;
+        font-size: 0.8rem;
+        color: #777;
+        text-align: center;
+    }
+    
+    .qrcode-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .qrcode-img {
+        width: 120px;
+        height: 120px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+    }
+    
+    .qrcode-desc {
+        flex: 1;
+        font-size: 0.9rem;
+        color: #555;
+    }
+    
+    .qrcode-desc p {
+        margin: 0 0 10px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .qrcode-desc i {
+        color: #6c5ce7;
+        font-size: 0.9rem;
+        width: 16px;
+        text-align: center;
+    }
+    
+    .qrcode-desc strong {
+        color: #6c5ce7;
+    }
+    
+    .modal-options {
+        margin: 20px 0;
+        text-align: center;
+    }
+    
+    .dont-show-again {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: #555;
+        cursor: pointer;
+    }
+    
+    .dont-show-again input {
+        cursor: pointer;
+    }
+    
+    .modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .modal-confirm-btn {
+        background-color: #6c5ce7;
+        color: white;
+        border: none;
+        padding: 10px 30px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .modal-confirm-btn:hover {
+        background-color: #5649c0;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-confirm-btn:active {
+        transform: translateY(1px);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    
+    @media (max-width: 480px) {
+        .modal-container {
+            width: 95%;
+            max-height: 85vh;
+        }
+        
+        .qrcode-container {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .qrcode-desc p {
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    // 弹窗控制逻辑
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const dontShowAgainCheckbox = document.getElementById('dontShowAgain');
+        
+        // 检查sessionStorage中是否设置了不再显示
+        const dontShowModal = sessionStorage.getItem('dontShowToolalaModal');
+        
+        // 如果没有设置不再显示，则显示弹窗
+        if (dontShowModal !== 'true') {
+            setTimeout(() => {
+                modalOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }, 1500); // 页面加载1.5秒后显示
+        }
+        
+        // 确认按钮点击事件
+        modalConfirmBtn.addEventListener('click', function() {
+            // 检查是否勾选"不再提醒"
+            if (dontShowAgainCheckbox.checked) {
+                // 使用sessionStorage存储，只在当前会话有效
+                sessionStorage.setItem('dontShowToolalaModal', 'true');
+            }
+            
+            modalOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+            
+            // 添加点击效果
+            this.classList.add('clicked');
+            setTimeout(() => {
+                this.classList.remove('clicked');
+            }, 300);
+        });
+        
+        // 禁用滚动条
+        modalOverlay.addEventListener('wheel', function(e) {
+            if (!e.target.closest('.modal-body')) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
+
+
